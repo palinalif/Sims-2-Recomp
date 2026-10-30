@@ -105,6 +105,25 @@ to sound Misc, Sfx, Voice, Build, Buy, CAS, Neighborhood and Splash packages. Th
 does not establish runtime overlay ordering, save serialization, audio behavior or
 mod compatibility. Installed neighborhood templates are not user saves.
 
+## Build-toolchain forensics (as of 2026-10-30)
+
+Independent analyses (maintainer-side and an external contributor's agent) on
+the same specimen (`24041f83…2156b6`) agree on:
+
+- **Linker:** version 14.40 (VS2022-era) — confirmed from PE fields.
+- **Compiler:** MSVC v143 / 19.40 is the leading hypothesis (corroborating,
+  not yet proven by codegen reproduction).
+- **C runtime:** statically linked Universal CRT; static runtime from
+  Windows SDK 22621 matches 942 code addresses, 200 of which match neither
+  SDK 19041 nor 26100 references. Exact compiler patch level is
+  **unresolvable from code signatures** (two distinct compiler builds were
+  observed producing identical runtime code).
+
+Consistent with this, `ReleaseSRT` build metadata dates the analysed image to
+2025 — this is a modern rebuild of the legacy edition, not a 2004 binary.
+Compiler identity remains a hypothesis until candidate-toolchain codegen is
+compiled and diffed; nothing here changes any ledger tier.
+
 ## Decision and next evidence
 
 Retain the provisional Windows static-recompilation architecture and portable

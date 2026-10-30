@@ -36,7 +36,7 @@ code is a first-class engine codebase, not a scratchpad:
 - **Name things after what they mean.** Use recovered semantics (`GetObjectFlags`, not `sub_10A0`). If the meaning isn't recovered yet, the function stays `fun_<rva>` — renaming it *is* recovery work.
 - **Cite your receipts in comments.** One line above each re-implemented function: original RVA, evidence pointer (ledger row / PR / receipt path), and behavioural caveats ("path-bounded: only the non-null branch is proven").
 - **Idiomatic C++ over transliterated assembly.** Express the *behaviour*, not the register dance. A reviewer must be able to reason about the code without opening a disassembler. Clever macro or goto tricks that mirror x86 quirks are rejected on sight; a comment explaining a quirk is welcome.
-- **Small functions, plain control flow, no premature cleverness.** Where the original relies on a compiler artifact (VC6-era quirks, hand-rolled SEH frames), isolate it in a small, clearly-labelled adapter marked `HYPOTHESIS:`/`PROVEN:` rather than weaving it through game logic.
+- **Small functions, plain control flow, no premature cleverness.** Where the original relies on a compiler artifact (MSVC codegen quirks, hand-rolled SEH frames), isolate it in a small, clearly-labelled adapter marked `HYPOTHESIS:`/`PROVEN:` rather than weaving it through game logic.
 - **Comments explain why, docs explain what.** Anything a future modder could get wrong (calling conventions, ownership of guest pointers, tier limitations) gets written down *now*, while you remember.
 - A PR that passes every differential but reads like obfuscated assembly will be sent back. **Correct-but-illegible is a failure state in this project.**
 
@@ -89,7 +89,7 @@ evidence of what failed. A precise dead end is worth three vague successes.
 Contributor machines that run long jobs should heartbeat the public progress board so the
 dashboard can show who is doing what:
 
-`POST https://kind-tobacco-sku-banner.trycloudflare.com/api/worker`
+`POST https://sims2-api.galdrakarl.is/api/worker`
 
 ```json
 {"worker": "<your-machine-name>", "worker_key": "*** from the owner>",
