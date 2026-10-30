@@ -1,0 +1,115 @@
+/* Authored diagnostic transport. @BODIES@ is inserted only into ignored work/.
+ * Single-owner checked integer fixture, NOT a sandbox or Windows service.
+ * Defaults to upstream dummy-return ABI; opt-in metadata seam precedes bodies.
+ */
+#define RECOMP_GENERATED_CODE
+#include "recomp_types.h"
+#include <setjmp.h>
+uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_cur_func;
+uint32_t g_icall_trace[ICALL_TRACE_SIZE],g_icall_from[ICALL_TRACE_SIZE];
+uint32_t g_icall_trace_idx,g_icall_count;
+ptrdiff_t g_mem_base;
+static uint32_t stack_page[1024], data_page[1024], iat[4], input[14];
+static uint32_t event_count, stack_base, tail_observed;
+#ifndef ENTRY_BOUNDARY
+#define ENTRY_BOUNDARY 0
+#endif
+static jmp_buf escape;
+static const char *failure;
+static void reject(const char *reason) { failure=reason; longjmp(escape,1); }
+static uint32_t *word(uint32_t a) {
+    if (a&3u) reject("unaligned-memory");
+    if (a>=stack_base && (uint64_t)a+4<= (uint64_t)stack_base+4096)
+        return &stack_page[(a-stack_base)/4];
+    if (a==0xA104F540u || a==0xA104F580u) return &data_page[(a-0xA104F000u)/4];
+    const uint32_t slots[]={0xA0D9A2A4u,0xA0D9A194u,0xA0D9A1BCu,0xA0D9A24Cu};
+    for (unsigned k=0;k<4;k++) if(a==slots[k]) return &iat[k];
+    reject("unmapped-memory"); return NULL;
+}
+#undef MEM32
+#define MEM32(a) (*word((uint32_t)(a)))
+static void endpoint(unsigned k) {
+    const uint32_t returns[]={0xA0825874u,0xA0825883u,0xA082588Cu,0xA0825899u};
+    uint32_t hs=input[1]-12u-(ENTRY_BOUNDARY?4u:0u), pop=(k==0 || k==3)?4u:0u;
+    if(k!=event_count) reject("endpoint-order");
+    if(g_esp!=hs-(pop?32u:28u)) reject("endpoint-frame");
+    if(MEM32(g_esp)!=returns[k]) reject("endpoint-return-address");
+    if(pop) {
+        uint32_t ptr=hs-(k==0?16u:24u);
+        if(MEM32(g_esp+4)!=ptr) reject("endpoint-output-pointer");
+        if(k==0 && (MEM32(ptr)!=0 || MEM32(ptr+4)!=0)) reject("endpoint-zeroing");
+        unsigned index=k==0?3u:7u;
+        MEM32(ptr)=input[index]; MEM32(ptr+4)=input[index+1];
+    }
+    g_eax=k==0?0xDEADBEEFu:k==1?input[5]:k==2?input[6]:input[13];
+    g_ecx=0xCCCCCCCCu; g_edx=0xDDDDDDDDu;
+    g_esp+=4u+pop;
+    if(g_esp!=hs-24u) reject("endpoint-cleanup");
+    event_count++;
+}
+static void api0(void){endpoint(0);} static void api1(void){endpoint(1);}
+static void api2(void){endpoint(2);} static void api3(void){endpoint(3);}
+/* Observation only: no target instructions, return, stack pop or service stub.
+ * Leave the lifted ITAIL via longjmp before it could return to generated code. */
+static void tail_stop(void) {
+    if(!ENTRY_BOUNDARY || g_cur_func!=0xA08248A3u || tail_observed)
+        reject("tail-boundary");
+    tail_observed=0xA0824727u;
+    longjmp(escape,2);
+}
+@BODIES@
+recomp_func_t recomp_lookup_manual(uint32_t va) { (void)va; return NULL; }
+recomp_func_t recomp_lookup_import(uint32_t va) { (void)va; reject("unresolved-target"); return NULL; }
+recomp_func_t recomp_lookup(uint32_t va) {
+    switch(va) {
+#if ENTRY_BOUNDARY
+    case 0xA0824727u: return tail_stop;
+#endif
+    case 0xA08258A9u: return startup_8258A9;
+    case 0xA082585Cu: return startup_82585C;
+    case 0x72000000u: return api0; case 0x72000010u: return api1;
+    case 0x72000020u: return api2; case 0x72000030u: return api3;
+    default: return NULL;
+    }
+}
+static void page_hex(const uint32_t *page) {
+    const unsigned char *p=(const unsigned char *)page;
+    putchar('"'); for(unsigned j=0;j<4096;j++) printf("%02x",p[j]); putchar('"');
+}
+int main(void) {
+    /* Fixed 320-case little-endian protocol; checked ELF target is little-endian. */
+    for(unsigned n=0;n<320;n++) {
+        if(fread(input,sizeof input,1,stdin)!=1) return 90;
+        stack_base=input[0];
+        if(stack_base!=0x70000000u && stack_base!=0x70010000u &&
+           stack_base!=0x70020000u && stack_base!=0x70030000u) return 91;
+        if(input[1]!=stack_base+0x800u) return 92;
+        memset(stack_page,0xA5,sizeof stack_page); memset(data_page,0xA5,sizeof data_page);
+        MEM32(input[1])=0x71000000u; MEM32(0xA104F540u)=input[2];
+        for(unsigned k=0;k<4;k++) iat[k]=0x72000000u+16u*k;
+        g_eax=0x13579BDFu; g_ecx=g_edx=0; g_esp=input[1];
+        g_ebx=input[9];g_esi=input[10];g_edi=input[11];g_ebp=input[12];
+        g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;
+        g_cur_func=g_icall_trace_idx=g_icall_count=event_count=0;
+        memset(g_icall_trace,0,sizeof g_icall_trace); memset(g_icall_from,0,sizeof g_icall_from);
+        failure=NULL; tail_observed=0;
+        if(setjmp(escape)==0) {
+#if ENTRY_BOUNDARY
+            startup_8248A3();
+            reject("tail-boundary"); /* Entry must stop, not return. */
+#else
+            startup_8258A9();
+#endif
+        }
+        if(!failure && ENTRY_BOUNDARY && tail_observed!=0xA0824727u)
+            reject("tail-boundary");
+        for(unsigned k=0;k<4;k++) if(iat[k]!=0x72000000u+16u*k) return 93;
+        if(failure) { printf("{\"case\":%u,\"rejected\":\"%s\"}\n",n,failure); continue; }
+        printf("{\"case\":%u,\"state\":{\"eax\":%u,\"saved\":[%u,%u,%u,%u],\"sp\":%u,\"events\":[",n,g_eax,g_ebx,g_esi,g_edi,g_ebp,g_esp);
+        for(unsigned k=0;k<event_count;k++) printf("%s%u",k?",":"",k);
+        printf("],\"stack\":");page_hex(stack_page);printf(",\"data\":");page_hex(data_page);
+        if(ENTRY_BOUNDARY) printf(",\"eip\":%u",tail_observed);
+        puts("}}");
+    }
+    return getchar()==EOF?0:94;
+}

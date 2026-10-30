@@ -1,0 +1,44 @@
+/* Authored bounded development transport, not a runtime service binding. */
+#define RECOMP_GENERATED_CODE
+#include "recomp_types.h"
+#include <setjmp.h>
+uint32_t g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp,g_cur_func;
+uint32_t g_fs_base,g_gs_base;
+ptrdiff_t g_mem_base;
+static uint32_t pages[4][1024];
+static const uint32_t bases[]={0x70000000u,0x72000000u,0xA104F000u,0xA10DF000u};
+static jmp_buf escape;
+static int rejected;
+static void *access_data(uint32_t a,unsigned size) {
+    if((size==1 || size==4) && !(a%(uint32_t)size)) for(unsigned p=0;p<4;p++)
+        if(a>=bases[p] && (uint64_t)a+size<=(uint64_t)bases[p]+4096)
+            return (unsigned char *)pages[p]+(a-bases[p]);
+    rejected=1;longjmp(escape,1);return NULL;
+}
+#undef MEM32
+#undef MEM8
+#define MEM32(a) (*(uint32_t *)access_data((uint32_t)(a),4))
+#define MEM8(a) (*(uint8_t *)access_data((uint32_t)(a),1))
+@BODY@
+#ifndef TS2_ENTRY_SP_A
+#define TS2_ENTRY_SP_A 0x70000800u
+#define TS2_ENTRY_SP_B 0x70000C00u
+#endif
+int main(void) {
+    uint32_t in[8];
+    for(unsigned n=0;n<64;n++) {
+        if(fread(in,sizeof in,1,stdin)!=1 || fread(pages,sizeof pages,1,stdin)!=1) return 90;
+        if(in[7]!=TS2_ENTRY_SP_A && in[7]!=TS2_ENTRY_SP_B) return 91;
+        g_eax=in[0];g_ebx=in[1];g_ecx=in[2];g_edx=in[3];
+        g_esi=in[4];g_edi=in[5];g_ebp=in[6];g_esp=in[7];
+        g_fs_base=g_gs_base=0;g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;rejected=0;
+        if(setjmp(escape)==0) startup_82A47B();
+        if(rejected) {printf("{\"case\":%u,\"rejected\":true}\n",n);continue;}
+        printf("{\"case\":%u,\"regs\":[%u,%u,%u,%u,%u,%u,%u,%u],\"pages\":\"",
+            n,g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp);
+        const unsigned char *b=(const unsigned char *)pages;
+        for(unsigned k=0;k<sizeof pages;k++) printf("%02x",b[k]);
+        puts("\"}");
+    }
+    return getchar()==EOF?0:92;
+}

@@ -1,0 +1,3 @@
+-r requirements.txt
+# Used only by the explicit local interoperability experiment and authored tests.
+cryptography==50.0.0

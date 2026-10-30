@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "versions": [
+    {
+      "id": "steam-legacy-1.18.0.187",
+      "sha256": "24041f834e979cc088714713c3207540ff9093f51ff126450a4f7989432156b6",
+      "file_version": "1.18.0.187",
+      "size": 18662696,
+      "machine": "x86",
+      "execution_supported": false,
+      "recompilation_ready": false,
+      "protection_family": "SteamStub 3.x (metadata and AES-256-CBC recovery validated; exact minor variant unverified)",
+      "unpacking_requires_user_approval": true,
+      "analysis_experiment": {
+        "scope": "Approved private metadata/code recovery and exactly one original function",
+        "completed": true,
+        "analysis_image_sha256": "63a545db48a9cf5ce5f5cdca467ed49728ea3c79132fa0eff8abf10e91659985",
+        "original_function_rva": "0x1070",
+        "host_reference_cases_passed": 64,
+        "arm64_compiled": true,
+        "arm64_executed": false,
+        "game_initialized": false
+      },
+      "blocker": "This fingerprint identifies the unchanged wrapped input, unsuitable for direct lifting. A private analysis copy passed one-function validation; broader execution is unimplemented and further scope requires approval."
+    }
+  ],
+  "note": "Fingerprint recognition is metadata only, never execution support. See docs/TARGET_LEGACY.md."
+}

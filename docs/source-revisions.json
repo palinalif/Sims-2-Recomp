@@ -1,0 +1,59 @@
+{
+  "checked_on": "2026-10-21",
+  "repositories": [
+    {
+      "repo": "codepdbh/nfsu2-recompiled",
+      "sha": "ba99da0b127dc6e98202e4f856dcd0913b695b47",
+      "license": null,
+      "branch": "main"
+    },
+    {
+      "repo": "LazyDuchess/OpenTS2",
+      "sha": "bdabb07f4689ed91803a3d86dcbc8870b8832878",
+      "license": {
+        "key": "mpl-2.0",
+        "name": "Mozilla Public License 2.0",
+        "spdx_id": "MPL-2.0",
+        "url": "https://api.github.com/licenses/mpl-2.0",
+        "node_id": "MDc6TGljZW5zZTE0"
+      },
+      "branch": "master"
+    },
+    {
+      "repo": "sp00nznet/pcrecomp",
+      "sha": "c0cbd3e3653010782b17e8a87b58953608ea411c",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "branch": "main"
+    },
+    {
+      "repo": "OmniBlade/LasMarionetas",
+      "sha": "b1f378c92dca777b31cc8dfe0cebe3f8f6c345c7",
+      "license": {
+        "key": "gpl-2.0",
+        "name": "GNU General Public License v2.0",
+        "spdx_id": "GPL-2.0",
+        "url": "https://api.github.com/licenses/gpl-2.0",
+        "node_id": "MDc6TGljZW5zZTg="
+      },
+      "branch": "master"
+    },
+    {
+      "repo": "doitsujin/dxvk",
+      "sha": "d713ef8748a1eee3e90d4b6d5dc2e80f5be4b519",
+      "license": {
+        "key": "zlib",
+        "name": "zlib License",
+        "spdx_id": "Zlib",
+        "url": "https://api.github.com/licenses/zlib",
+        "node_id": "MDc6TGljZW5zZTI3"
+      },
+      "branch": "master"
+    }
+  ]
+}

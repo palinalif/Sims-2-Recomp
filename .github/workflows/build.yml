@@ -1,0 +1,29 @@
+name: Foundation checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          pip install -r tools/requirements.txt
+          scripts/test-host.sh
+          JAVA_HOME="$JAVA_HOME_17_X64" scripts/test-package-stream.sh
+          cmake -S . -B build/sanitized -DTS2_SANITIZERS=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build/sanitized --parallel
+          ctest --test-dir build/sanitized --output-on-failure
+  android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install pinned SDK components and build
+        shell: bash
+        run: |
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          export PATH="$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.2.12479018' 'cmake;3.31.6'
+          scripts/build-android.sh --no-daemon

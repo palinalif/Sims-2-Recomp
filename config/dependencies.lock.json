@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "qfs_reference": {
+    "repository": "https://github.com/LittleBigBug/QuickBMS",
+    "revision": "5315ffe664b88dc09ae783ad17d9dfd252b1c927",
+    "file": "src/compression/refpack.c",
+    "url": "https://raw.githubusercontent.com/LittleBigBug/QuickBMS/5315ffe664b88dc09ae783ad17d9dfd252b1c927/src/compression/refpack.c",
+    "sha256": "d3d0345596978e0907a8b8e4230edb9eb9752ca48a542eae09a2b5e8597e05f2",
+    "usage": "Independent host verification only; not linked or redistributed with the application."
+  },
+  "pcrecomp": {
+    "repository": "https://github.com/sp00nznet/pcrecomp",
+    "revision": "c0cbd3e3653010782b17e8a87b58953608ea411c",
+    "archive_url": "https://api.github.com/repos/sp00nznet/pcrecomp/tarball/c0cbd3e3653010782b17e8a87b58953608ea411c",
+    "archive_sha256": "2a533391a9d90a80653e4a440819e66525537a23a03aa01c3fc6c4ba2d6fc9fc",
+    "files": {
+      "tools/drm/steamstub.py": "6a3724044bdb471454646d8504d53fe60f6aad45a07dc1d841e7bacaff0433f7",
+      "tools/lift/difftest.py": "31c220ae4672b49fba5dc351655ec4febce0c3ed899c4664bfae216926aab10b",
+      "tools/lift/lift32.py": "cf28b8699681c95a312251ccf14a326c27eb0af7fefbb8878983ce449430494c",
+      "tools/lift/lift32_sse.py": "8b119f88689d3c518616ac696c959964449ee1cb776bca0393d193ab943069f1",
+      "runtime/recomp32/recomp_types.h": "1ab5b031e600cbfbc97649e3958b45014de99e812addb165728fdf2c90508cf9"
+    }
+  }
+}

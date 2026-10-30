@@ -1,0 +1,163 @@
+/* Authored development transport: three verbatim lifts, NOT Windows services. */
+#define RECOMP_GENERATED_CODE
+#include "recomp_types.h"
+#include <setjmp.h>
+uint32_t g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp,g_cur_func;
+static uint32_t stack[1024],modules[1024],names[1024],slots[1024],indices[1024],cookie_page[1024];
+static uint32_t responses[2][5],loads[2],comparisons[2],active,export_value,storage_value,provider_pop,hot_clobber;
+static unsigned event_count,helper_active,resolver_active,hot_active;
+static struct event { unsigned kind,count; uint32_t args[4],ret,sp,regs[8]; } events[15];
+static jmp_buf escape;
+static void require_contract(int ok) { if(!ok) longjmp(escape,1); }
+static void *access_data(uint32_t a) {
+    require_contract(!(a&3));
+    if(a>=0xB8000000u && a<=0xB8000FFCu) return &stack[(a-0xB8000000u)/4];
+    if(a>=0xA10E0000u && a<=0xA10E0FFCu) {
+        require_contract(!hot_active || a==0xA10E0334u);
+        return &modules[(a-0xA10E0000u)/4];
+    }
+    if(a==0xA104F540u) return &cookie_page[0x540/4];
+    if(hot_active) require_contract(a==0xA0D9A71Cu || a==0xA0D9A2C8u);
+    if(a==0xA0E09964u || a==0xA0E099E4u) return &names[(a-0xA0E09000u)/4];
+    if(a==0xA0D9A2D4u || a==0xA0D9A118u || a==0xA0D9A124u || a==0xA0D9A71Cu || a==0xA0D9A2C8u) return &slots[(a-0xA0D9A000u)/4];
+    if(a==0xA0E0A05Cu || a==0xA0E0A060u) return &indices[(a-0xA0E0A05Cu)/4];
+    longjmp(escape,1); return NULL;
+}
+#undef MEM32
+#define MEM32(a) (*(uint32_t *)access_data((uint32_t)(a)))
+static void startup_847DA1(void);
+static void startup_847E6C(void);
+static uint32_t call_return(uint32_t va,uint32_t sp) {
+    if(!resolver_active) {
+        if(event_count==0 && va==0xA0847E6Cu) return 0xA08480DBu;
+        if(va==0xC7000000u) return 0xA08480EFu;
+        if(va==0xC7000020u) return 0xA08480F1u;
+    } else if(!helper_active) {
+        if(va==0xA0847DA1u) return 0xA0847EB0u;
+        if(va==0xC70000A0u) return 0xA0847EC0u;
+        if(va==0xA082F3ECu) return 0xA0847ECCu;
+    } else {
+        if(va==0xC7000080u) return MEM32(sp+8)==0x800u?0xA0847DE5u:0xA0847E27u;
+        if(va==0xC7000090u) return 0xA0847DF1u;
+        if(va==0xA0845B53u) {
+            require_contract(active<2 && comparisons[active]<2);
+            return comparisons[active]?0xA0847E17u:0xA0847E03u;
+        }
+    }
+    longjmp(escape,1); return 0;
+}
+static void endpoint(uint32_t va,int tail) {
+    if(va==0xA0847DA1u) {
+        require_contract(!hot_active && !tail && resolver_active && !helper_active);
+        helper_active=1;startup_847DA1();helper_active=0;return;
+    }
+    if(va==0xA082F3ECu) {
+        require_contract(!hot_active && !tail && resolver_active && !helper_active);
+        uint32_t value=MEM32(g_esp+4),cookie=cookie_page[0x540/4],count=cookie&31;
+        g_eax=(count?((value<<count)|(value>>(32-count))):value)^cookie;
+        g_esp+=4;return; /* Authored cdecl encoder, NOT translated. */
+    }
+    require_contract(event_count<15);
+    unsigned kind=va==0xA0847E6Cu?0:va==0xC7000080u?1:va==0xC7000090u?2:
+        va==0xA0845B53u?3:va==0xC70000A0u?4:va==0xC7000000u?5:
+        va==0xC7000020u?6:va==0xC7000010u?7:8;
+    require_contract(kind<8 && tail==(kind==7) && (!hot_active || kind==0 || kind>=5));
+    require_contract(kind==0?(!resolver_active && event_count==0):
+        kind<=4?(resolver_active && helper_active==(kind!=4)):(!resolver_active && !helper_active));
+    if(kind==5 || kind==6) require_contract(g_ecx==0xC7000020u);
+    struct event *e=&events[event_count++];
+    e->kind=kind;e->count=kind==0?4:kind==1 || kind==3?3:kind==4?2:kind>=6?1:0;
+    e->sp=g_esp;e->ret=MEM32(g_esp)-0xA0000000u;
+    uint32_t regs[8]={g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp};
+    memcpy(e->regs,regs,sizeof regs);
+    for(unsigned k=0;k<e->count;k++) e->args[k]=MEM32(g_esp+4+4*k);
+    if(kind==0) {
+        require_contract(e->args[0]==33 && e->args[1]==0xA0E06E5Cu && e->args[2]==0xA0E0A05Cu && e->args[3]==0xA0E0A064u);
+        resolver_active=1;startup_847E6C();resolver_active=0;return;
+    }
+    if(kind==1) {
+        require_contract(e->args[0]==0xC1234567u || e->args[0]==0xC12345E7u);
+        active=e->args[0]==0xC1234567u?0:1;
+        require_contract(loads[active]<2);g_eax=responses[active][loads[active]++?4:0];
+    } else if(kind==4) g_eax=export_value;
+    else if(kind>=6) {
+        g_eax=storage_value;
+        if(hot_active && hot_clobber) { g_ecx=0xFEEDFACEu;g_edx=0xDEADBEEFu; }
+    }
+    else if(kind!=5) {
+        require_contract(active<2);
+        if(kind==2) g_eax=responses[active][1];
+        else {require_contract(comparisons[active]<2);g_eax=responses[active][2+comparisons[active]++];}
+    }
+    g_esp+=4+(kind==1?12:kind==4?8:kind>=6?provider_pop:0);
+}
+#undef RECOMP_ICALL
+#undef RECOMP_ITAIL
+#define RECOMP_ICALL(va) do { uint32_t v=(uint32_t)(va);uint32_t ret=call_return(v,esp); \
+    PUSH32(esp,ret);RECOMP_FLAGS_OUT();RECOMP_REGS_OUT();endpoint(v,0);RECOMP_REGS_IN(); } while(0)
+#define RECOMP_ITAIL(va) do { uint32_t v=(uint32_t)(va); \
+    RECOMP_FLAGS_OUT();RECOMP_REGS_OUT();endpoint(v,1);RECOMP_REGS_IN(); } while(0)
+@MODULE@
+@RESOLVER@
+@SELECTOR@
+int main(void) {
+    uint32_t in[28],original_stack[1024],original_modules[1024],original_names[1024],original_slots[1024],original_indices[1024],original_cookie[1024];
+    const unsigned offsets[2]={0x25C/4,0x2DC/4};
+    const char *kinds[]={"resolve","load","error","compare","export","guard","fls","tls"};
+    unsigned n=0;int next;
+    while((next=getchar())!=EOF) {
+        if(ungetc(next,stdin)==EOF || fread(in,sizeof in,1,stdin)!=1 || fread(stack,sizeof stack,1,stdin)!=1) return 90;
+        g_eax=in[0];g_ebx=in[1];g_ecx=in[2];g_edx=in[3];g_esi=in[4];g_edi=in[5];g_ebp=in[6];g_esp=in[7];
+        storage_value=in[20];export_value=in[23];provider_pop=in[26];hot_clobber=in[27];
+        memset(modules,0x96,sizeof modules);modules[offsets[0]]=in[8];modules[offsets[1]]=in[9];modules[0x334/4]=in[22];
+        memcpy(responses,in+10,sizeof responses);
+        memset(cookie_page,0,sizeof cookie_page);cookie_page[0x540/4]=in[22];
+        memset(names,0,sizeof names);names[0x964/4]=0xC1234567u;names[0x9E4/4]=0xC12345E7u;
+        memset(slots,0,sizeof slots);slots[0x2D4/4]=in[21];slots[0x118/4]=0xC7000090u;slots[0x124/4]=in[25];slots[0x71C/4]=0xC7000000u;slots[0x2C8/4]=0xC7000010u;
+        memset(indices,0,sizeof indices);indices[0]=1;indices[1]=33;
+        memcpy(original_stack,stack,sizeof stack);memcpy(original_modules,modules,sizeof modules);
+        memcpy(original_names,names,sizeof names);memcpy(original_slots,slots,sizeof slots);memcpy(original_indices,indices,sizeof indices);memcpy(original_cookie,cookie_page,sizeof cookie_page);
+        memset(loads,0,sizeof loads);memset(comparisons,0,sizeof comparisons);active=2;event_count=helper_active=resolver_active=hot_active=0;
+        g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;
+        if(setjmp(escape)) { printf("{\"case\":%u,\"rejected\":true}\n",n++);continue; }
+        require_contract(g_esp==0xB8000800u && hot_clobber<=1 && in[24]<=1 && (export_value==0 || export_value==0xC7000020u) && (provider_pop==0 || provider_pop==4));
+        storage_selector();
+        require_contract(!helper_active && !resolver_active && event_count>=2 && g_esp==in[7]+8 && g_ebx==in[1] && g_esi==in[4] && g_edi==in[5] && g_ebp==in[6]);
+        require_contract(!memcmp(stack,original_stack,0x800-92) && !memcmp(stack+0x800/4,original_stack+0x800/4,0x800));
+        original_modules[offsets[0]]=modules[offsets[0]];original_modules[offsets[1]]=modules[offsets[1]];original_modules[0x334/4]=modules[0x334/4];
+        require_contract(!memcmp(modules,original_modules,sizeof modules) && !memcmp(names,original_names,sizeof names) && !memcmp(slots,original_slots,sizeof slots) && !memcmp(indices,original_indices,sizeof indices) && !memcmp(cookie_page,original_cookie,sizeof cookie_page));
+        uint32_t cold_eax=g_eax,cold_esp=g_esp;
+        unsigned cold_count=event_count;struct event cold_events[15];
+        memcpy(cold_events,events,sizeof events);
+        /* Keep cold publication; reset only CPU/stack, never reseed the cache. */
+        memcpy(stack,original_stack,sizeof stack);
+        g_eax=in[0];g_ebx=in[1];g_ecx=in[2];g_edx=in[3];g_esi=in[4];g_edi=in[5];g_ebp=in[6];g_esp=in[7];
+        g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;
+        event_count=0;hot_active=1;
+        /* Test-only fault: removing publication must demand forbidden cold work. */
+        if(in[24]) modules[0x334/4]=cookie_page[0x540/4];
+        storage_selector();
+        require_contract(!helper_active && !resolver_active && event_count>=2 && event_count<=3);
+        require_contract(!memcmp(modules,original_modules,sizeof modules) && !memcmp(names,original_names,sizeof names) && !memcmp(slots,original_slots,sizeof slots) && !memcmp(indices,original_indices,sizeof indices) && !memcmp(cookie_page,original_cookie,sizeof cookie_page));
+        printf("{\"case\":%u,\"eax\":%u,\"esp\":%u,\"modules\":[%u,%u],\"cache\":%u,\"events\":[",n++,cold_eax,cold_esp,modules[offsets[0]],modules[offsets[1]],modules[0x334/4]);
+        for(unsigned k=0;k<cold_count;k++) {
+            struct event *e=&cold_events[k];printf("%s[\"%s\",[",k?",":"",kinds[e->kind]);
+            for(unsigned j=0;j<e->count;j++) printf("%s%u",j?",":"",e->args[j]);
+            printf("],%u,%u]",e->ret,e->sp);
+        }
+        printf("],\"hot\":{\"registers\":[%u,%u,%u,%u,%u,%u,%u,%u],\"stack\":\"",
+            g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp);
+        const unsigned char *bytes=(const unsigned char *)stack;
+        for(unsigned k=0;k<sizeof stack;k++) printf("%02x",bytes[k]);
+        printf("\",\"events\":[");
+        for(unsigned k=0;k<event_count;k++) {
+            struct event *e=&events[k];printf("%s{\"kind\":\"%s\",\"args\":[",k?",":"",kinds[e->kind]);
+            for(unsigned j=0;j<e->count;j++) printf("%s%u",j?",":"",e->args[j]);
+            printf("],\"returnRva\":%u,\"registers\":[",e->ret);
+            for(unsigned j=0;j<8;j++) printf("%s%u",j?",":"",e->regs[j]);
+            printf("]}");
+        }
+        puts("]}}");
+    }
+    return feof(stdin) && !ferror(stdin)?0:92;
+}

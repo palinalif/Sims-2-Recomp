@@ -1,0 +1,94 @@
+/* Authored development transport: two verbatim lifts, no Windows services. */
+#define RECOMP_GENERATED_CODE
+#include "recomp_types.h"
+#include <setjmp.h>
+uint32_t g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp,g_cur_func;
+static uint32_t stack[1024],slots[1024],cookie_page[1024],cache_page[1024];
+static uint32_t storage_response,clobber;
+static unsigned event_count,resolver_active;
+static jmp_buf escape;
+static struct event { unsigned kind,count; uint32_t args[4],ret,sp,ecx; } events[3];
+static void require_contract(int ok) { if(!ok) longjmp(escape,1); }
+static void *access_data(uint32_t a) {
+    require_contract(!(a&3));
+    if(a>=0xB8000000u && a<=0xB8000FFCu) return &stack[(a-0xB8000000u)/4];
+    if(a==0xA0D9A71Cu || a==0xA0D9A2C8u) return &slots[(a-0xA0D9A000u)/4];
+    if(a==0xA104F540u) return &cookie_page[0x540/4];
+    if(a==0xA10E0334u) return &cache_page[0x334/4];
+    longjmp(escape,1); return NULL;
+}
+#undef MEM32
+#define MEM32(a) (*(uint32_t *)access_data((uint32_t)(a)))
+static void startup_847E6C(void);
+static uint32_t call_return(uint32_t va) {
+    require_contract(!resolver_active);
+    if(event_count==0 && va==0xA0847E6Cu) return 0xA08480DBu;
+    if(event_count==1 && va==0xC7000000u) return 0xA08480EFu;
+    if(event_count==2 && va==0xC7000020u) return 0xA08480F1u;
+    longjmp(escape,1); return 0;
+}
+static void endpoint(uint32_t va,int tail) {
+    require_contract(!resolver_active && event_count<3);
+    unsigned kind=va==0xA0847E6Cu?0:va==0xC7000000u?1:va==0xC7000020u?2:va==0xC7000010u?3:4;
+    require_contract(kind<4 && tail==(kind==3));
+    require_contract((kind==0 && event_count==0) || (kind==1 && event_count==1 && g_ecx==0xC7000020u) ||
+        (kind==2 && event_count==2 && g_ecx==0xC7000020u) || (kind==3 && event_count==1));
+    struct event *e=&events[event_count++];
+    e->kind=kind; e->count=kind==0?4:kind==1?0:1;
+    e->sp=g_esp; e->ecx=g_ecx; e->ret=MEM32(g_esp)-0xA0000000u;
+    for(unsigned k=0;k<e->count;k++) e->args[k]=MEM32(g_esp+4+4*k);
+    if(kind==0) {
+        require_contract(e->args[0]==33);
+        resolver_active=1;
+        startup_847E6C();
+        resolver_active=0;
+        return; /* The compiled resolver performs its own cdecl RET. */
+    }
+    if(kind!=1) {
+        g_eax=storage_response;
+        if(clobber) {g_ecx=0xFEEDFACEu;g_edx=0xDEADBEEFu;}
+    }
+    g_esp+=4+(kind==1?0:4);
+}
+#undef RECOMP_ICALL
+#undef RECOMP_ITAIL
+#define RECOMP_ICALL(va) do { uint32_t v=(uint32_t)(va); uint32_t ret=call_return(v); \
+    PUSH32(esp,ret); RECOMP_FLAGS_OUT(); RECOMP_REGS_OUT(); endpoint(v,0); RECOMP_REGS_IN(); } while(0)
+#define RECOMP_ITAIL(va) do { uint32_t v=(uint32_t)(va); \
+    RECOMP_FLAGS_OUT(); RECOMP_REGS_OUT(); endpoint(v,1); RECOMP_REGS_IN(); } while(0)
+@RESOLVER@
+@SELECTOR@
+int main(void) {
+    uint32_t in[12],original_slots[1024],original_cookie[1024],original_cache[1024];
+    const char *names[]={"resolve","guard","fls","tls"};
+    unsigned n=0; int next;
+    while((next=getchar())!=EOF) {
+        if(ungetc(next,stdin)==EOF || fread(in,sizeof in,1,stdin)!=1 || fread(stack,sizeof stack,1,stdin)!=1) return 90;
+        g_eax=in[0];g_ebx=in[1];g_ecx=in[2];g_edx=in[3];g_esi=in[4];g_edi=in[5];g_ebp=in[6];g_esp=in[7];
+        storage_response=in[10];clobber=in[11];
+        memset(slots,0,sizeof slots);slots[0x71C/4]=0xC7000000u;slots[0x2C8/4]=0xC7000010u;
+        memset(cookie_page,0,sizeof cookie_page);cookie_page[0x540/4]=in[8];
+        memset(cache_page,0,sizeof cache_page);cache_page[0x334/4]=in[9];
+        memcpy(original_slots,slots,sizeof slots);memcpy(original_cookie,cookie_page,sizeof cookie_page);
+        memcpy(original_cache,cache_page,sizeof cache_page);event_count=resolver_active=0;
+        g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;
+        if(setjmp(escape)) { printf("{\"case\":%u,\"rejected\":true}\n",n++);continue; }
+        require_contract(g_esp==0xB8000800u && clobber<=1);
+        storage_selector();
+        require_contract((event_count==2 || event_count==3) && !resolver_active &&
+            !memcmp(slots,original_slots,sizeof slots) && !memcmp(cookie_page,original_cookie,sizeof cookie_page) &&
+            !memcmp(cache_page,original_cache,sizeof cache_page));
+        printf("{\"case\":%u,\"registers\":[%u,%u,%u,%u,%u,%u,%u,%u],\"stack\":\"",n++,
+            g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp);
+        const unsigned char *bytes=(const unsigned char *)stack;
+        for(unsigned k=0;k<sizeof stack;k++) printf("%02x",bytes[k]);
+        printf("\",\"events\":[");
+        for(unsigned k=0;k<event_count;k++) {
+            struct event *e=&events[k];printf("%s[\"%s\",[",k?",":"",names[e->kind]);
+            for(unsigned j=0;j<e->count;j++) printf("%s%u",j?",":"",e->args[j]);
+            printf("],%u,%u,%u]",e->ret,e->sp,e->ecx);
+        }
+        puts("]}");
+    }
+    return feof(stdin) && !ferror(stdin)?0:92;
+}

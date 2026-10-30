@@ -1,0 +1,81 @@
+/* Authored diagnostic transport; generated private bodies inserted verbatim. */
+#include <stdexcept>
+extern "C" {
+void cache_reset(const unsigned char*);
+unsigned cache_read(unsigned,unsigned);
+void cache_write(unsigned,unsigned,unsigned);
+void cache_copy(unsigned char*);
+void cache_invoke(unsigned,unsigned*,void (*)(unsigned*));
+}
+#define RECOMP_GENERATED_CODE
+#include "recomp_types.h"
+uint32_t g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp,g_cur_func;
+uint32_t g_fs_base,g_gs_base;
+ptrdiff_t g_mem_base;
+static void reject() { throw std::runtime_error("closure"); }
+struct Cell {
+    uint32_t address; unsigned size;
+    operator uint32_t() const { return cache_read(address,size); }
+    Cell& operator=(uint32_t v) {cache_write(address,size,v);return *this;}
+    Cell& operator=(const Cell& v) {return *this=uint32_t(v);}
+};
+#undef MEM32
+#undef MEM8
+#define MEM32(a) (Cell{uint32_t(a),4})
+#define MEM8(a) (Cell{uint32_t(a),1})
+@PROTOTYPES@
+static void select_body(uint32_t va,uint32_t* state) {
+    g_eax=state[0];g_ebx=state[1];g_ecx=state[2];g_edx=state[3];
+    g_esi=state[4];g_edi=state[5];g_ebp=state[6];g_esp=state[7];
+    switch(va) { @SELECT@ default:reject(); }
+    state[0]=g_eax;state[1]=g_ebx;state[2]=g_ecx;state[3]=g_edx;
+    state[4]=g_esi;state[5]=g_edi;state[6]=g_ebp;state[7]=g_esp;
+}
+@ADAPTERS@
+static void invoke(uint32_t va) {
+    uint32_t state[]={g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp};
+    void (*callback)(uint32_t*)=nullptr;
+    switch(va) { @CALLBACKS@ default:reject(); }
+    cache_invoke(va,state,callback);
+    g_eax=state[0];g_ebx=state[1];g_ecx=state[2];g_edx=state[3];
+    g_esi=state[4];g_edi=state[5];g_ebp=state[6];g_esp=state[7];
+}
+static uint32_t direct_return(uint32_t caller,uint32_t target) {
+    @DIRECT_RETURNS@
+    reject();return 0;
+}
+static uint32_t indirect_return(uint32_t caller,uint32_t target) {
+    @INDIRECT_RETURNS@
+    reject();return 0;
+}
+#undef RECOMP_CALL
+#undef RECOMP_ICALL
+#undef RECOMP_ITAIL
+#define RECOMP_CALL(func) do { uint32_t target=address_##func,caller=g_cur_func; \
+    PUSH32(esp,direct_return(caller,target));RECOMP_FLAGS_OUT();RECOMP_REGS_OUT(); \
+    invoke(target);RECOMP_REGS_IN();g_cur_func=caller; } while(0)
+#define RECOMP_ICALL(va) do { uint32_t target=uint32_t(va),caller=g_cur_func; \
+    PUSH32(esp,indirect_return(caller,target));RECOMP_FLAGS_OUT();RECOMP_REGS_OUT(); \
+    invoke(target);RECOMP_REGS_IN();g_cur_func=caller; } while(0)
+#define RECOMP_ITAIL(va) do { uint32_t target=uint32_t(va); \
+    if(g_cur_func!=0xA000FCF0u || target!=0xA0009550u) reject(); \
+    RECOMP_FLAGS_OUT();RECOMP_REGS_OUT();invoke(target);RECOMP_REGS_IN(); } while(0)
+@BODY@
+int main() {
+    uint32_t in[8];unsigned char pages[6*4096];
+    for(unsigned n=0;n<64;++n) {
+        if(fread(in,sizeof in,1,stdin)!=1 || fread(pages,sizeof pages,1,stdin)!=1) return 90;
+        if(in[7]!=0x70000800u && in[7]!=0x70000C00u) return 91;
+        g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;g_fs_base=g_gs_base=0;
+        try {
+            cache_reset(pages);
+            cache_invoke(0xA01ABD40u,in,adapter_1ABD40);
+            cache_copy(pages);
+            printf("{\"case\":%u,\"regs\":[%u,%u,%u,%u,%u,%u,%u,%u],\"pages\":\"",
+                n,in[0],in[1],in[2],in[3],in[4],in[5],in[6],in[7]);
+            for(unsigned k=0;k<sizeof pages;++k) printf("%02x",pages[k]);
+            puts("\"}");
+        } catch (...) {printf("{\"case\":%u,\"rejected\":true}\n",n);}
+    }
+    return getchar()==EOF?0:92;
+}

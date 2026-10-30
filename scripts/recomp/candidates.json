@@ -1,0 +1,355 @@
+{
+  "schema": "sims2-recomp-selection/1",
+  "image_sha256": "63a545db48a9cf5ce5f5cdca467ed49728ea3c79132fa0eff8abf10e91659985",
+  "authorization_limit": 25,
+  "policy": "fixed documented shortlist, hard dependencies first; no replacements on failure",
+  "category_interpretation": "HYPOTHESIS: static stress coverage, not validated behavior",
+  "sampling_limit": "not representative statistically; no executable-wide extrapolation",
+  "unknowns": "null means unmeasured, not absent, zero or passed",
+  "counts": {
+    "selected": 21,
+    "rejected": 2,
+    "attempted": 0,
+    "lifted": 0,
+    "compiled_for_aarch64": 0,
+    "matched_x86_reference": 0,
+    "executed_under_qemu": 0
+  },
+  "selected": [
+    {
+      "rank": 1,
+      "rva": "0x9B52C0",
+      "size_bytes": null,
+      "categories": [
+        "startup or resource path",
+        "direct call"
+      ],
+      "source": "docs/RESOURCE_PRECEDENCE.md",
+      "selection_rule": "resource attachment funnel",
+      "boundary_evidence": "unvalidated",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 2,
+      "rva": "0x1E36F0",
+      "size_bytes": null,
+      "categories": [
+        "startup or resource path",
+        "indirect call / vtable"
+      ],
+      "source": "docs/RESOURCE_PRECEDENCE.md",
+      "selection_rule": "indirect resource entry; sole funnel caller",
+      "boundary_evidence": "unvalidated",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 3,
+      "rva": "0x1E95C0",
+      "size_bytes": null,
+      "categories": [
+        "startup or resource path",
+        "direct call"
+      ],
+      "source": "docs/RESOURCE_PRECEDENCE.md",
+      "selection_rule": "candidate rebuild with nine callers",
+      "boundary_evidence": "unvalidated",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 4,
+      "rva": "0x1ABD40",
+      "size_bytes": null,
+      "categories": [
+        "memory access through pointers",
+        "direct call"
+      ],
+      "source": "docs/OBJECT_QUERY_CALLER.md",
+      "selection_rule": "five-query cache refresh caller",
+      "boundary_evidence": "unvalidated",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 5,
+      "rva": "0x1D3E20",
+      "size_bytes": null,
+      "categories": [
+        "startup or resource path",
+        "memory access through pointers"
+      ],
+      "source": "docs/RESOURCE_PRECEDENCE.md",
+      "selection_rule": "resource constructor seed",
+      "boundary_evidence": "unvalidated",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 6,
+      "rva": "0x1DA310",
+      "size_bytes": null,
+      "categories": [
+        "startup or resource path",
+        "memory access through pointers"
+      ],
+      "source": "docs/RESOURCE_PRECEDENCE.md",
+      "selection_rule": "second resource constructor seed",
+      "boundary_evidence": "unvalidated",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 7,
+      "rva": "0x8248A3",
+      "size_bytes": null,
+      "categories": [
+        "startup or resource path",
+        "direct call"
+      ],
+      "source": "docs/INTEROP_EXPERIMENT.md",
+      "selection_rule": "original entry metadata, not wrapped PE entry",
+      "boundary_evidence": "metadata-entry-only",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 8,
+      "rva": "0x8258A9",
+      "size_bytes": null,
+      "categories": [
+        "startup or resource path"
+      ],
+      "source": "docs/RESOURCE_PRECEDENCE.md",
+      "selection_rule": "first entry-connected unsupported dependency",
+      "boundary_evidence": "unvalidated",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 9,
+      "rva": "0x82585C",
+      "size_bytes": null,
+      "categories": [
+        "startup or resource path",
+        "indirect call / vtable",
+        "stack operations"
+      ],
+      "source": "scripts/recomp/README.md",
+      "selection_rule": "measured direct dependency of 8258A9; four absolute IAT calls",
+      "boundary_evidence": "indexed-entry-local-flow-only",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 10,
+      "rva": "0x824727",
+      "size_bytes": null,
+      "categories": [
+        "startup or resource path",
+        "direct call",
+        "stack operations"
+      ],
+      "source": "docs/RESOURCE_PRECEDENCE.md",
+      "selection_rule": "unimplemented original-entry tail; bounded normal flow before entry",
+      "boundary_evidence": "address-only-index-local-flow-hypothesis",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 11,
+      "rva": "0x1460",
+      "size_bytes": null,
+      "categories": [
+        "indirect call / vtable",
+        "stack operations",
+        "memory access through pointers"
+      ],
+      "source": "docs/OBJECT_QUERY_CALLER.md",
+      "selection_rule": "callback producer and failure cleanup",
+      "boundary_evidence": "unvalidated",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 12,
+      "rva": "0x1AB7E0",
+      "size_bytes": null,
+      "categories": [
+        "direct call",
+        "indirect call / vtable"
+      ],
+      "source": "docs/OBJECT_QUERY_CALLER.md",
+      "selection_rule": "cache consumer reaches indirect jump-table helper",
+      "boundary_evidence": "unvalidated",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 13,
+      "rva": "0x1070",
+      "size_bytes": 19,
+      "categories": [
+        "simple leaf, no calls",
+        "memory access through pointers"
+      ],
+      "source": "docs/LOCAL_VALIDATION.md",
+      "selection_rule": "historical original pointer-store helper",
+      "boundary_evidence": "historical-reviewed-range",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 14,
+      "rva": "0x1240",
+      "size_bytes": 11,
+      "categories": [
+        "simple leaf, no calls",
+        "memory access through pointers"
+      ],
+      "source": "docs/LOCAL_VALIDATION.md",
+      "selection_rule": "reuse pinned group reference first",
+      "boundary_evidence": "historical-reviewed-range",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 15,
+      "rva": "0x1250",
+      "size_bytes": 27,
+      "categories": [
+        "branching arithmetic",
+        "memory access through pointers"
+      ],
+      "source": "docs/LOCAL_VALIDATION.md",
+      "selection_rule": "reuse pinned branching group reference first",
+      "boundary_evidence": "historical-reviewed-range",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 16,
+      "rva": "0x1270",
+      "size_bytes": 30,
+      "categories": [
+        "branching arithmetic",
+        "memory access through pointers"
+      ],
+      "source": "docs/LOCAL_VALIDATION.md",
+      "selection_rule": "reuse pinned guarded group reference first",
+      "boundary_evidence": "historical-reviewed-range",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 17,
+      "rva": "0x1AB770",
+      "size_bytes": null,
+      "categories": [
+        "stack operations",
+        "memory access through pointers",
+        "direct call"
+      ],
+      "source": "docs/LOCAL_VALIDATION.md",
+      "selection_rule": "historical cache wrapper with saved references",
+      "boundary_evidence": "historical-reviewed-range",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 18,
+      "rva": "0x1AB78C",
+      "size_bytes": null,
+      "categories": [
+        "stack operations",
+        "memory access through pointers",
+        "direct call"
+      ],
+      "source": "docs/LOCAL_VALIDATION.md",
+      "selection_rule": "paired historical cache wrapper with saved references",
+      "boundary_evidence": "historical-reviewed-range",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 19,
+      "rva": "0x825BB0",
+      "size_bytes": 69,
+      "categories": [
+        "startup or resource path",
+        "stack operations",
+        "memory access through pointers"
+      ],
+      "source": "scripts/recomp/README.md",
+      "selection_rule": "first tail helper; composed nonzero-FS reference precedes lift",
+      "boundary_evidence": "indexed-entry-and-bounded-reference-not-full-SEH",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 20,
+      "rva": "0x82A6D3",
+      "size_bytes": 55,
+      "categories": [
+        "startup or resource path",
+        "direct call",
+        "stack operations"
+      ],
+      "source": "scripts/recomp/README.md",
+      "selection_rule": "first callee of resource failure boundary 82A797; three direct dependencies",
+      "boundary_evidence": "indexed-normal-return-flow-only-not-behavior",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    },
+    {
+      "rank": 21,
+      "rva": "0x82A47B",
+      "size_bytes": 72,
+      "categories": [
+        "startup or resource path",
+        "branching arithmetic",
+        "stack operations",
+        "memory access through pointers"
+      ],
+      "source": "scripts/recomp/README.md",
+      "selection_rule": "first direct dependency of 82A6D3; bounded indexed leaf with globals",
+      "boundary_evidence": "indexed-normal-return-flow-only-not-behavior",
+      "reliable_ghidra_boundary": null,
+      "dependencies": null,
+      "status": "selected-not-attempted-this-run"
+    }
+  ],
+  "rejected": [
+    {
+      "rva": "0x1AB79C",
+      "source": "docs/LOCAL_VALIDATION.md",
+      "reason": "documented call instruction inside wrapper, not function entry"
+    },
+    {
+      "rva": "0xC261A1",
+      "source": "docs/RESOURCE_PRECEDENCE.md",
+      "reason": "documented table immediate site; address-only index result, not entry"
+    }
+  ]
+}

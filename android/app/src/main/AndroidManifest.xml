@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.gamepad" android:required="false" />
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <application android:label="Sims 2 Native — Diagnostics" android:theme="@android:style/Theme.Material.NoActionBar"
+        android:icon="@drawable/ic_diagnostic" android:banner="@drawable/tv_banner"
+        android:dataExtractionRules="@xml/data_extraction_rules" android:fullBackupContent="false" android:allowBackup="false" android:supportsRtl="true">
+        <activity android:name=".MainActivity" android:exported="true" android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

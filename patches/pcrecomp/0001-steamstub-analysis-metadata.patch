@@ -1,0 +1,93 @@
+--- a/tools/drm/steamstub.py
++++ b/tools/drm/steamstub.py
+@@ -221,0 +222,90 @@
++
++
++def inspect_v3(raw, header_size=None, expected_appid=None):
++    """Validate 3.x metadata without decrypting code or changing the PE.
++
++    An explicit size is for a caller-reviewed loader whose copy instructions
++    differ from V3_COPY. It is never guessed by scanning encrypted headers.
++    The existing CLI and unwrap() behavior are unchanged.
++    """
++    pe = pefile.PE(data=raw, fast_load=True)
++    try:
++        if pe.FILE_HEADER.Machine != 0x14C or pe.OPTIONAL_HEADER.Magic != 0x10B:
++            raise StubError('analysis requires x86 PE32')
++        base, ep = pe.OPTIONAL_HEADER.ImageBase, pe.OPTIONAL_HEADER.AddressOfEntryPoint
++        section = pe.get_section_by_rva(ep)
++        if section is None or section.Name.rstrip(b'\0') != b'.bind' or not section.Characteristics & 0x20000000:
++            raise StubError('analysis entry must be in executable .bind')
++        def backed(rva, size, owner):
++            relative = rva - owner.VirtualAddress
++            offset = owner.PointerToRawData + relative
++            if relative < 0 or size < 0 or relative + size > owner.SizeOfRawData or offset + size > len(raw):
++                raise StubError('analysis range lacks complete raw section backing')
++            return offset
++        entry_offset = backed(ep, len(V3_PROLOGUE), section)
++        entry = raw[entry_offset:min(entry_offset + 0x100, section.PointerToRawData + section.SizeOfRawData, len(raw))]
++        if not entry.startswith(V3_PROLOGUE):
++            raise StubError('analysis entry does not match SteamStub 3.x')
++        locator = 'reviewed-explicit-size'
++        if header_size is None:
++            match = V3_COPY.search(entry, 0x80, 0xC0) or V3_COPY.search(entry)
++            if not match:
++                raise StubError('3.x stub does not copy its header the known way; explicit reviewed size required')
++            header_size, displacement = struct.unpack('<Ii', match.group(1) + match.group(2))
++            if displacement != -header_size:
++                raise StubError('header-copy displacement does not match size')
++            locator = 'known-copy-pattern'
++        if not isinstance(header_size, int) or not 0x98 <= header_size <= 0x400 or header_size % 4:
++            raise StubError('analysis header size must be aligned and contain all required fields')
++        offset = backed(ep - header_size, header_size, section)
++        seed = struct.unpack_from('<I', raw, offset)[0]
++        header = struct.pack('<I', seed) + xor_chain(raw[offset + 4:offset + header_size], seed)
++        word = lambda position: struct.unpack_from('<I', header, position)[0]
++        if word(4) != V3_SIGNATURE:
++            raise StubError('analysis header signature mismatch')
++        if word(V3_IMAGE_BASE) != base:
++            raise StubError('analysis header image base mismatch')
++        appid = word(V3_APPID)
++        if not appid or (expected_appid is not None and appid != expected_appid):
++            raise StubError('analysis app id mismatch')
++        code_rva, code_size, original_rva = word(V3_CODE_VA), word(V3_CODE_SIZE), word(V3_OEP)
++        code = next((item for item in pe.sections if item.VirtualAddress == code_rva), None)
++        if code is None or code is section or not code.Characteristics & 0x20000000:
++            raise StubError('analysis code range must start in a separate executable section')
++        if not code_size or code_size % 16:
++            raise StubError('analysis code size is zero or unaligned')
++        code_offset = backed(code_rva, code_size, code)
++        code_end = code_offset + code_size
++        headers_end = max(pe.OPTIONAL_HEADER.SizeOfHeaders,
++                          max(item.get_file_offset() + 40 for item in pe.sections))
++        if code_offset < headers_end:
++            raise StubError('analysis code raw range overlaps PE headers')
++        for other in pe.sections:
++            if other is not code and other.SizeOfRawData and code_offset < other.PointerToRawData + other.SizeOfRawData and code_end > other.PointerToRawData:
++                raise StubError('analysis code raw range overlaps another section')
++        security = pe.OPTIONAL_HEADER.DATA_DIRECTORY[4] if len(pe.OPTIONAL_HEADER.DATA_DIRECTORY) > 4 else None
++        if security and security.Size and code_offset < security.VirtualAddress + security.Size and code_end > security.VirtualAddress:
++            raise StubError('analysis code raw range overlaps certificate data')
++        if not code_rva <= original_rva < code_rva + min(code_size, code.Misc_VirtualSize) or base + code_rva + code_size > 0x100000000:
++            raise StubError('analysis original entry/code address bounds mismatch')
++        return header, dict(variant='3.x', image_base=base, appid=appid, flags=word(V3_FLAGS),
++                            oep=base + original_rva, code_va=base + code_rva, code_size=code_size,
++                            code_offset=code_offset, section=code.Name.rstrip(b'\0').decode('ascii', 'replace'),
++                            header_va=base + ep - header_size, header_offset=offset,
++                            header_size=header_size, metadata_locator=locator)
++    finally:
++        pe.close()
++
++
++def recover_v3_analysis(raw, header_size=None, expected_appid=None):
++    """Recover only code bytes for private static analysis, preserving every PE
++    header, import, wrapper byte and overlay. Does not call finish() or execute.
++    Caller must review the reported flags/layout before invoking this operation.
++    """
++    header, info = inspect_v3(raw, header_size, expected_appid)
++    offset, size = info['code_offset'], info['code_size']
++    plain = v3_decrypt_code(header, raw[offset:offset + size], size)
++    if len(plain) != size:
++        raise StubError('analysis decoded length mismatch')
++    image = raw[:offset] + plain + raw[offset + size:]
++    return image, dict(info, analysis_only=True, headers_preserved=True)

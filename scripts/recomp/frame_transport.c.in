@@ -1,0 +1,49 @@
+/* Authored single-owner diagnostic transport. Derived body stays private.
+ * No callbacks, original caller continuation, exception dispatch or game runtime.
+ */
+#define RECOMP_GENERATED_CODE
+#include "recomp_types.h"
+#include <setjmp.h>
+uint32_t g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp,g_cur_func;
+uint32_t g_fs_base,g_gs_base;
+ptrdiff_t g_mem_base;
+static uint32_t stack_page[1024],fs_page[1024],cookie_page[1024];
+static jmp_buf escape;
+static const char *failure;
+static void reject(void) { failure="memory-contract"; longjmp(escape,1); }
+static uint32_t *word(uint32_t a) {
+    if(a&3u) reject();
+    if(a>=0x70000000u && (uint64_t)a+4<=0x70001000ull)
+        return &stack_page[(a-0x70000000u)/4];
+    if(a==g_fs_base) return &fs_page[0];
+    if(a==0xA104F540u) return &cookie_page[0x540/4];
+    reject(); return NULL;
+}
+#undef MEM32
+#define MEM32(a) (*word((uint32_t)(a)))
+@BODY@
+static void page_hex(const uint32_t *p) {
+    const unsigned char *b=(const unsigned char *)p;
+    putchar('"');for(unsigned k=0;k<4096;k++) printf("%02x",b[k]);putchar('"');
+}
+int main(void) {
+    uint32_t in[11];
+    for(unsigned n=0;n<64;n++) {
+        if(fread(in,sizeof in,1,stdin)!=1 || fread(stack_page,sizeof stack_page,1,stdin)!=1) return 90;
+        if((in[8]!=0x74000000u && in[8]!=0x75000000u) ||
+           (in[7]!=0x700007F4u && in[7]!=0x70000BF4u)) return 91;
+        g_eax=in[0];g_ebx=in[1];g_ecx=in[2];g_edx=in[3];
+        g_esi=in[4];g_edi=in[5];g_ebp=in[6];g_esp=in[7];
+        g_fs_base=in[8];g_gs_base=0;
+        memset(fs_page,0x6D,sizeof fs_page);memset(cookie_page,0xB6,sizeof cookie_page);
+        fs_page[0]=in[9];cookie_page[0x540/4]=in[10];
+        g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;failure=NULL;
+        if(setjmp(escape)==0) startup_825BB0();
+        if(failure) {printf("{\"case\":%u,\"rejected\":\"%s\"}\n",n,failure);continue;}
+        printf("{\"case\":%u,\"regs\":[%u,%u,%u,%u,%u,%u,%u,%u],\"stack\":",
+            n,g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp);
+        page_hex(stack_page);printf(",\"fs\":");page_hex(fs_page);
+        printf(",\"cookie\":");page_hex(cookie_page);puts("}");
+    }
+    return getchar()==EOF?0:92;
+}

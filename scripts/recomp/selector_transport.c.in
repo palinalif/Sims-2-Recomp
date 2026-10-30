@@ -1,0 +1,79 @@
+/* Authored bounded development ABI transport. No Windows services or bindings. */
+#define RECOMP_GENERATED_CODE
+#include "recomp_types.h"
+#include <setjmp.h>
+uint32_t g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp,g_cur_func;
+static uint32_t stack[1024], slots[1024], target_response, storage_response, clobber;
+static jmp_buf escape;
+static unsigned event_count;
+static struct event { unsigned kind,count; uint32_t args[4],ret,sp,ecx; } events[3];
+static void require_contract(int ok) { if(!ok) longjmp(escape,1); }
+static void *access_data(uint32_t a) {
+    require_contract(!(a&3));
+    if(a>=0xB8000000u && a<=0xB8000FFCu) return &stack[(a-0xB8000000u)/4];
+    if(a>=0xA0D9A000u && a<=0xA0D9AFFCu) return &slots[(a-0xA0D9A000u)/4];
+    longjmp(escape,1); return NULL;
+}
+#undef MEM32
+#define MEM32(a) (*(uint32_t *)access_data((uint32_t)(a)))
+/* Site-specific return VAs are an explicit development contract: the pinned
+ * lifter's generic dummy return address cannot satisfy full-stack comparison.
+ * The generated body is inserted verbatim; no call/RET instruction is replaced.
+ */
+static uint32_t call_return(uint32_t va) {
+    if(event_count==0 && va==0xA0847E6Cu) return 0xA08480DBu;
+    if(event_count==1 && va==0xC7000000u) return 0xA08480EFu;
+    if(event_count==2 && va==0xC7000020u) return 0xA08480F1u;
+    longjmp(escape,1); return 0;
+}
+static void endpoint(uint32_t va,int tail) {
+    require_contract(event_count<3);
+    unsigned kind=va==0xA0847E6Cu?0:va==0xC7000000u?1:va==0xC7000020u?2:va==0xC7000010u?3:4;
+    require_contract(kind<4 && tail==(kind==3));
+    require_contract((kind==0 && event_count==0) || (kind==1 && event_count==1 && target_response) ||
+        (kind==2 && event_count==2 && target_response) || (kind==3 && event_count==1 && !target_response));
+    struct event *e=&events[event_count++];
+    e->kind=kind; e->count=kind==0?4:kind==1?0:1;
+    e->sp=g_esp; e->ecx=g_ecx; e->ret=MEM32(g_esp)-0xA0000000u;
+    for(unsigned k=0;k<e->count;k++) e->args[k]=MEM32(g_esp+4+4*k);
+    if(kind!=1) {
+        g_eax=kind==0?target_response:storage_response;
+        if(clobber) {g_ecx=0xFEEDFACEu;g_edx=0xDEADBEEFu;}
+    }
+    g_esp+=4+((kind==2 || kind==3)?4:0);
+}
+#undef RECOMP_ICALL
+#undef RECOMP_ITAIL
+#define RECOMP_ICALL(va) do { uint32_t v=(uint32_t)(va); uint32_t ret=call_return(v); \
+    PUSH32(esp,ret); RECOMP_FLAGS_OUT(); RECOMP_REGS_OUT(); endpoint(v,0); RECOMP_REGS_IN(); } while(0)
+#define RECOMP_ITAIL(va) do { uint32_t v=(uint32_t)(va); \
+    RECOMP_FLAGS_OUT(); RECOMP_REGS_OUT(); endpoint(v,1); RECOMP_REGS_IN(); } while(0)
+@BODY@
+int main(void) {
+    uint32_t in[11], original_slots[1024];
+    const char *names[]={"resolve","guard","fls","tls"};
+    for(unsigned n=0;n<256;n++) {
+        if(fread(in,sizeof in,1,stdin)!=1 || fread(stack,sizeof stack,1,stdin)!=1) return 90;
+        g_eax=in[0];g_ebx=in[1];g_ecx=in[2];g_edx=in[3];g_esi=in[4];g_edi=in[5];g_ebp=in[6];g_esp=in[7];
+        target_response=in[8];storage_response=in[9];clobber=in[10];
+        memset(slots,0,sizeof slots);slots[0x71C/4]=0xC7000000u;slots[0x2C8/4]=0xC7000010u;
+        memcpy(original_slots,slots,sizeof slots); event_count=0;
+        g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;
+        if(setjmp(escape)) { printf("{\"case\":%u,\"rejected\":true}\n",n);continue; }
+        require_contract(g_esp==0xB8000800u && (target_response==0 || target_response==0xC7000020u) && clobber<=1);
+        storage_selector();
+        require_contract(event_count==(target_response?3:2) && !memcmp(slots,original_slots,sizeof slots));
+        printf("{\"case\":%u,\"registers\":[%u,%u,%u,%u,%u,%u,%u,%u],\"stack\":\"",n,
+            g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp);
+        const unsigned char *bytes=(const unsigned char *)stack;
+        for(unsigned k=0;k<sizeof stack;k++) printf("%02x",bytes[k]);
+        printf("\",\"events\":[");
+        for(unsigned k=0;k<event_count;k++) {
+            struct event *e=&events[k]; printf("%s[\"%s\",[",k?",":"",names[e->kind]);
+            for(unsigned j=0;j<e->count;j++) printf("%s%u",j?",":"",e->args[j]);
+            printf("],%u,%u,%u]",e->ret,e->sp,e->ecx);
+        }
+        puts("]}");
+    }
+    return getchar()==EOF?0:92;
+}

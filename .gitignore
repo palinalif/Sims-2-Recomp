@@ -1,0 +1,39 @@
+/.tools/
+/.venv/
+/build*/
+/work/
+/generated/
+/game-files/
+/artifacts/
+/sims2-native-pi-*.zip
+/sims2-native-pi-*.zip.sha256
+/PI_HANDOFF.md
+/PI_HANDOFF_MANIFEST.json
+*.exe
+*.dll
+*.package
+*.iso
+*.bin
+*.apk
+*.aab
+*.so
+*.o
+*.pyc
+__pycache__/
+android/.gradle/
+android/.android/
+android/local.properties
+android/**/build/
+android/**/.cxx/
+.idea/
+
+# Pi/Ralph durable state and private campaign artifacts
+**/.ralph-runner/
+**/.ralph-runner-archive/
+**/RALPH_PROGRESS.md
+ralph-logs-*/
+tasks/**/artifacts/
+
+# Project-local Pi package installs (the Ralph runner extension + its node_modules).
+# .pi/settings.json stays tracked so the extension declaration is reproducible.
+/.pi/npm/

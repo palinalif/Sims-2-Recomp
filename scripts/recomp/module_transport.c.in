@@ -1,0 +1,94 @@
+/* Authored isolated development transport. Endpoints are responses, NOT OS services. */
+#define RECOMP_GENERATED_CODE
+#include "recomp_types.h"
+#include <setjmp.h>
+uint32_t g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp,g_cur_func;
+static uint32_t stack[1024],modules[1024],names[1024],slots[1024],indices[1024];
+static uint32_t responses[2][5],loads[2],comparisons[2],active;
+static unsigned event_count,race;
+static struct event { unsigned kind,count; uint32_t args[3],ret,sp; } events[10];
+static jmp_buf escape;
+static void require_contract(int ok) { if(!ok) longjmp(escape,1); }
+static void *access_data(uint32_t a) {
+    require_contract(!(a&3));
+    if(a>=0xB8000000u && a<=0xB8000FFCu) return &stack[(a-0xB8000000u)/4];
+    if(a>=0xA10E0000u && a<=0xA10E0FFCu) return &modules[(a-0xA10E0000u)/4];
+    if(a==0xA0E09964u || a==0xA0E099E4u) return &names[(a-0xA0E09000u)/4];
+    if(a==0xA0D9A2D4u || a==0xA0D9A118u || a==0xA0D9A120u) return &slots[(a-0xA0D9A000u)/4];
+    if(a==0xC2345000u || a==0xC2345004u) return &indices[(a-0xC2345000u)/4];
+    longjmp(escape,1); return NULL;
+}
+#undef MEM32
+#define MEM32(a) (*(uint32_t *)access_data((uint32_t)(a)))
+static uint32_t return_address(uint32_t va,uint32_t sp) {
+    if(va==0xC7000000u) return MEM32(sp+8)==0x800u?0xA0847DE5u:0xA0847E27u;
+    if(va==0xC7000010u) return 0xA0847DF1u;
+    if(va==0xA0845B53u) {
+        require_contract(active<2 && comparisons[active]<2);
+        return comparisons[active]?0xA0847E17u:0xA0847E03u;
+    }
+    longjmp(escape,1); return 0;
+}
+static void endpoint(uint32_t va) {
+    require_contract(event_count<10);
+    unsigned kind=va==0xC7000000u?0:va==0xC7000010u?1:va==0xA0845B53u?2:3;
+    require_contract(kind<3);
+    struct event *e=&events[event_count++];
+    e->kind=kind;e->count=kind==1?0:3;e->sp=g_esp;e->ret=MEM32(g_esp)-0xA0000000u;
+    for(unsigned k=0;k<e->count;k++) e->args[k]=MEM32(g_esp+4+4*k);
+    if(kind==0) {
+        require_contract(e->args[0]==0xC1234567u || e->args[0]==0xC12345E7u);
+        active=e->args[0]==0xC1234567u?0:1;
+        require_contract(loads[active]<2);
+        g_eax=responses[active][loads[active]++?4:0];
+        if(race) modules[(0x258+4*(active?33:1))/4]=0xCAFE0123u;
+    } else {
+        require_contract(active<2);
+        if(kind==1) g_eax=responses[active][1];
+        else { require_contract(comparisons[active]<2);g_eax=responses[active][2+comparisons[active]++]; }
+    }
+    g_esp+=4+(kind==0?12:0);
+}
+#undef RECOMP_ICALL
+#undef RECOMP_ITAIL
+#define RECOMP_ICALL(va) do { uint32_t v=(uint32_t)(va);uint32_t ret=return_address(v,esp); \
+    PUSH32(esp,ret);RECOMP_FLAGS_OUT();RECOMP_REGS_OUT();endpoint(v);RECOMP_REGS_IN(); } while(0)
+#define RECOMP_ITAIL(va) do { (void)(va);longjmp(escape,1); } while(0)
+@BODY@
+int main(void) {
+    uint32_t in[23],original_stack[1024],original_modules[1024],original_names[1024],original_slots[1024],original_indices[1024];
+    const unsigned offsets[2]={0x25C/4,0x2DC/4};
+    const char *kinds[]={"load","error","compare"};
+    unsigned n=0;int next;
+    while((next=getchar())!=EOF) {
+        if(ungetc(next,stdin)==EOF || fread(in,sizeof in,1,stdin)!=1) return 90;
+        g_eax=in[0];g_ebx=in[1];g_ecx=in[2];g_edx=in[3];g_esi=in[4];g_edi=in[5];g_ebp=in[6];g_esp=in[7];
+        memset(stack,0x5A,sizeof stack);stack[0x800/4]=0xBA000000u;
+        stack[0x804/4]=0xC2345000u;stack[0x808/4]=0xC2345000u+4*in[20];
+        memset(modules,0x96,sizeof modules);modules[offsets[0]]=in[8];modules[offsets[1]]=in[9];
+        memcpy(responses,in+10,sizeof responses);
+        memset(names,0,sizeof names);names[0x964/4]=0xC1234567u;names[0x9E4/4]=0xC12345E7u;
+        memset(slots,0,sizeof slots);slots[0x2D4/4]=in[21];slots[0x118/4]=0xC7000010u;
+        memset(indices,0,sizeof indices);indices[0]=1;indices[1]=33;
+        memcpy(original_stack,stack,sizeof stack);memcpy(original_modules,modules,sizeof modules);
+        memcpy(original_names,names,sizeof names);memcpy(original_slots,slots,sizeof slots);memcpy(original_indices,indices,sizeof indices);
+        memset(loads,0,sizeof loads);memset(comparisons,0,sizeof comparisons);active=2;event_count=0;race=in[22];
+        g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;
+        if(setjmp(escape)) { printf("{\"case\":%u,\"rejected\":true}\n",n++);continue; }
+        require_contract(in[20]<=2 && g_esp==0xB8000800u && race<=1);
+        startup_847DA1();
+        require_contract(g_ebx==in[1] && g_esi==in[4] && g_edi==in[5] && g_ebp==in[6]);
+        require_contract(!memcmp(stack,original_stack,0x800-36) && !memcmp(stack+0x800/4,original_stack+0x800/4,0x800));
+        original_modules[offsets[0]]=modules[offsets[0]];original_modules[offsets[1]]=modules[offsets[1]];
+        require_contract(!memcmp(modules,original_modules,sizeof modules) && !memcmp(names,original_names,sizeof names) &&
+            !memcmp(slots,original_slots,sizeof slots) && !memcmp(indices,original_indices,sizeof indices));
+        printf("{\"case\":%u,\"eax\":%u,\"esp\":%u,\"modules\":[%u,%u],\"events\":[",n++,g_eax,g_esp,modules[offsets[0]],modules[offsets[1]]);
+        for(unsigned k=0;k<event_count;k++) {
+            struct event *e=&events[k];printf("%s[\"%s\",[",k?",":"",kinds[e->kind]);
+            for(unsigned j=0;j<e->count;j++) printf("%s%u",j?",":"",e->args[j]);
+            printf("],%u,%u]",e->ret,e->sp);
+        }
+        puts("]}");
+    }
+    return feof(stdin) && !ferror(stdin)?0:92;
+}

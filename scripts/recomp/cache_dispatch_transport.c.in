@@ -1,0 +1,65 @@
+/* Authored bounded differential transport; no service responses or runtime binding. */
+#define RECOMP_GENERATED_CODE
+#include "recomp_types.h"
+#include <setjmp.h>
+uint32_t g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp,g_cur_func;
+uint32_t g_fs_base,g_gs_base;
+ptrdiff_t g_mem_base;
+static uint32_t pages[6][1024], originals[2][1024];
+static const uint32_t bases[]={0x70000000u,0x72000000u,0xA104F000u,0xA10DF000u,0xA0009000u,0xA0E17000u};
+static jmp_buf escape;
+static unsigned calls,tails;
+static void reject(void) { longjmp(escape,1); }
+static void *access_data(uint32_t a,unsigned size) {
+    if((size==1 || size==4) && !(a%size)) for(unsigned p=0;p<6;p++)
+        if(a>=bases[p] && (uint64_t)a+size<=(uint64_t)bases[p]+4096)
+            return (unsigned char *)pages[p]+(a-bases[p]);
+    reject();return NULL;
+}
+#undef MEM32
+#undef MEM8
+#define MEM32(a) (*(uint32_t *)access_data((uint32_t)(a),4))
+#define MEM8(a) (*(uint8_t *)access_data((uint32_t)(a),1))
+static void startup_009550(void);
+static void startup_00FCF0(void);
+static void dispatch(uint32_t va) {
+    if(va!=0xA000FCF0u || calls++) reject();
+    startup_00FCF0();
+}
+static void tail_dispatch(uint32_t va) {
+    if(va!=0xA0009550u || g_cur_func!=0xA000FCF0u || calls!=1 || tails++) reject();
+    startup_009550();
+}
+/* The sole call site's real return word is derived from its decoded address.
+ * This preserves whole-stack comparison without editing the generated body.
+ * No dummy return, target fallback, or authored callee result is admitted.
+ */
+#undef RECOMP_ICALL
+#undef RECOMP_ITAIL
+#define RECOMP_ICALL(va) do { uint32_t v=(uint32_t)(va),caller=g_cur_func; \
+    if(v!=0xA000FCF0u) reject(); \
+    PUSH32(esp,@RETURN@); RECOMP_FLAGS_OUT(); RECOMP_REGS_OUT(); \
+    dispatch(v); RECOMP_REGS_IN(); g_cur_func=caller; } while(0)
+#define RECOMP_ITAIL(va) do { uint32_t v=(uint32_t)(va); \
+    RECOMP_FLAGS_OUT(); RECOMP_REGS_OUT(); tail_dispatch(v); RECOMP_REGS_IN(); } while(0)
+@BODY@
+int main(void) {
+    uint32_t in[8];
+    for(unsigned n=0;n<64;n++) {
+        if(fread(in,sizeof in,1,stdin)!=1 || fread(pages,sizeof pages,1,stdin)!=1) return 90;
+        if(in[7]!=0x70000800u && in[7]!=0x70000C00u) return 91;
+        g_eax=in[0];g_ebx=in[1];g_ecx=in[2];g_edx=in[3];
+        g_esi=in[4];g_edi=in[5];g_ebp=in[6];g_esp=in[7];
+        g_fs_base=g_gs_base=0;g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;calls=tails=0;
+        memcpy(originals,&pages[4],sizeof originals);
+        if(setjmp(escape)) {printf("{\"case\":%u,\"rejected\":true}\n",n);continue;}
+        @ENTRY@();
+        if(memcmp(originals,&pages[4],sizeof originals)) reject();
+        printf("{\"case\":%u,\"regs\":[%u,%u,%u,%u,%u,%u,%u,%u],\"pages\":\"",
+            n,g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp);
+        const unsigned char *b=(const unsigned char *)pages;
+        for(unsigned k=0;k<sizeof pages;k++) printf("%02x",b[k]);
+        puts("\"}");
+    }
+    return getchar()==EOF?0:92;
+}

@@ -1,0 +1,52 @@
+/* Authored development-only hot-memory transport. No external service exists. */
+#define RECOMP_GENERATED_CODE
+#include "recomp_types.h"
+#include <setjmp.h>
+uint32_t g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp,g_cur_func;
+static uint32_t stack[1024],cookie_page[1024],cache_page[1024],index_word;
+static jmp_buf escape;
+static void require_contract(int ok) { if(!ok) longjmp(escape,1); }
+static void *access_data(uint32_t a) {
+    require_contract(!(a&3));
+    if(a>=0xB8000000u && a<=0xB8000FFCu) return &stack[(a-0xB8000000u)/4];
+    if(a==0xA104F540u) return &cookie_page[0x540/4];
+    if(a==0xA10E02B0u+4*index_word) return &cache_page[(0x2B0+4*index_word)/4];
+    longjmp(escape,1); return NULL;
+}
+#undef MEM32
+#define MEM32(a) (*(uint32_t *)access_data((uint32_t)(a)))
+/* Never use the upstream unresolved-call default (which may return EAX=0).
+ * The entire lifted body remains present; every call or tail must reject.
+ */
+#undef RECOMP_ICALL
+#undef RECOMP_ITAIL
+#define RECOMP_ICALL(va) do { (void)(va); longjmp(escape,1); } while(0)
+#define RECOMP_ITAIL(va) do { (void)(va); longjmp(escape,1); } while(0)
+@BODY@
+int main(void) {
+    uint32_t in[11],original_cookie[1024],original_cache[1024];
+    unsigned n=0;
+    int next;
+    while((next=getchar())!=EOF) {
+        if(ungetc(next,stdin)==EOF || fread(in,sizeof in,1,stdin)!=1 ||
+           fread(stack,sizeof stack,1,stdin)!=1) return 90;
+        g_eax=in[0];g_ebx=in[1];g_ecx=in[2];g_edx=in[3];g_esi=in[4];g_edi=in[5];g_ebp=in[6];g_esp=in[7];
+        index_word=in[10];
+        memset(cookie_page,0,sizeof cookie_page); memset(cache_page,0,sizeof cache_page);
+        cookie_page[0x540/4]=in[8];
+        if(index_word<64) cache_page[(0x2B0+4*index_word)/4]=in[9];
+        memcpy(original_cookie,cookie_page,sizeof cookie_page); memcpy(original_cache,cache_page,sizeof cache_page);
+        g_flag_k=g_flag_a=g_flag_b=g_flag_cf=0;
+        if(setjmp(escape)) { printf("{\"case\":%u,\"rejected\":true}\n",n++);continue; }
+        require_contract(g_esp==0xB8000800u && index_word<64 && MEM32(g_esp+4)==index_word);
+        startup_847E6C();
+        require_contract(!memcmp(cookie_page,original_cookie,sizeof cookie_page) &&
+                         !memcmp(cache_page,original_cache,sizeof cache_page));
+        printf("{\"case\":%u,\"registers\":[%u,%u,%u,%u,%u,%u,%u,%u],\"stack\":\"",n++,
+            g_eax,g_ebx,g_ecx,g_edx,g_esi,g_edi,g_ebp,g_esp);
+        const unsigned char *bytes=(const unsigned char *)stack;
+        for(unsigned k=0;k<sizeof stack;k++) printf("%02x",bytes[k]);
+        puts("\"}");
+    }
+    return feof(stdin) && !ferror(stdin)?0:92;
+}
