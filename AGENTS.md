@@ -57,19 +57,20 @@ docs and static analysis all run from a plain clone.
 Work units are individual original functions, addressed by RVA (e.g. `0x1AB665`).
 
 1. **Pick** an unclaimed function: skip anything in `docs/VERIFIED_LEDGER.md` (proven) and
-   anything claimed in open PRs or `docs/CLAIMS.md`. Early-game candidates are small leaf
-   functions: thunks, getters/setters, tiny helpers.
-2. **Claim** it: open a draft PR titled `Claim <RVA>: <short description>` adding one line
-   to `docs/CLAIMS.md`. While your claim PR is open, no one else should take that RVA.
+   anything listed on the live claims board (issue #1 / open `claim` issues). Early-game
+   candidates are small leaf functions: thunks, getters/setters, tiny helpers.
+2. **Claim** it: open an issue titled `Claim <RVA>: <short description>` with the `claim`
+   label. First open claim wins; the board is regenerated every 30 minutes. Close your
+   issue when your function merges or you abandon it.
 3. **Work** on a branch named `recomp/<rva>-<short-name>` (e.g. `recomp/0x10A0-field-reader`).
    One function per branch; stay inside your work's blast radius.
 4. **Prove** it: your PR contains the executed evidence — x86 reference run, host run, and
    (for full-tier) AArch64 run — with receipts under the paths described in
    `docs/VERIFICATION.md`. A PR that renames a function is documentation; a PR that
    *claims verification* without receipts will be closed with extreme prejudice.
-5. **Merge**: a maintainer reviews, re-runs your receipts, then merges your claim line and
-   ledger row together. Tiers are assigned by the reviewer, not the author — down-tiering
-   is normal and not an insult.
+5. **Merge**: a maintainer reviews, re-runs your receipts, then merges your ledger row
+   and closes your claim issue. Tiers are assigned by the reviewer, not the author —
+   down-tiering is normal and not an insult.
 
 If you're stuck for more than a few hours, open a draft PR with `BLOCKED:` and exact
 evidence of what failed. A precise dead end is worth three vague successes.

@@ -127,10 +127,13 @@ game files at all.
 ## Contributing
 
 1. Read [`AGENTS.md`](AGENTS.md) end to end — it defines the claim system
-   (`docs/CLAIMS.md`) that keeps two contributors off the same function.
+   (GitHub issues + the live board at issue #1) that keeps two contributors
+   off the same function. Want an unattended loop on your own machine?
+   [`docs/CONTRIBUTOR_LOOP.md`](docs/CONTRIBUTOR_LOOP.md) is the contract.
 2. Pick an unclaimed function (skip everything in
-   `docs/VERIFIED_LEDGER.md`), open a draft PR to claim it, branch
-   `recomp/<rva>-<name>`, implement, and attach differential evidence.
+   `docs/VERIFIED_LEDGER.md` and open `claim` issues), open a claim issue
+   `Claim <RVA>: <description>`, branch `recomp/<rva>-<name>`, implement,
+   and attach differential evidence in a PR.
 3. Keep code readable: semantic names (with receipts in comments), idiomatic
    C++ over transliterated assembly, compiler-quirk adapters clearly labelled.
 
