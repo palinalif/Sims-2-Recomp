@@ -15,6 +15,14 @@ committed or pushed by this pass; no gate was changed.
 | **T2** | x86-reference matched, **host execution only** (no AArch64 execution recorded) |
 | **T3** | Recorded claim that is partial, path-bounded, fragment/closure/boundary-contract, or compared against an authored model / oracle rather than a whole-function x86 differential — even when it ran on both ISAs |
 
+> **Policy update (2026-11-04):** ARM64/AArch64 execution is retired from the
+> tier requirements as of the port-deferral decision. Going forward **T1 =
+> whole-function differential proof against the x86 reference** (host or
+> emulated execution), and T2 collapses into it; the AArch64 clause in the
+> table above applies only to rows earned before this date. No existing row
+> is promoted or demoted by this change — the tier column records the
+> evidence as earned.
+
 Classification rules applied, and why some rows are lower than their commit subject sounds:
 
 1. A receipt was credited only for what its JSON literally says (`runs.*.executed`,

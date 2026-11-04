@@ -1,5 +1,14 @@
 # Verification record — 2026-10-21
 
+> **Policy update (2026-11-04):** platform ports (Android ARM64 first) are
+> deferred to a separate follow-on project. Effective immediately, the
+> verification ladder is **x86 reference vs host differential only** — the
+> AArch64/physical-device execution arms are retired from the gates, and no
+> tier requires a device. T1 = full differential proof against the recorded
+> x86 reference behaviour (emulated execution counts). Historical receipts
+> below are kept as-recorded, including the device runs already performed;
+> nothing already earned is demoted.
+
 Repository: `/workspace/sims2-native`, branch `work/native-foundation`.
 Initial foundation checks ran before game files arrived; later sections record
 the supplied Legacy analysis and resource work. A final local follow-up records

@@ -1,16 +1,26 @@
-# AGENTS.md — Contributing to the Sims 2 native Android port
+# AGENTS.md — Contributing to the Sims 2 clean-room engine recompilation
 
 ## What this project is
 
-A **from-the-executable-up native port of the original PC The Sims 2** (initial target:
-Steam Legacy Collection `1.18.0.187`) to Android ARM64. No emulation, no Wine/Box86, no
-Winlator: original x86 behaviour is being **reverse-engineered by semantics, re-implemented
-cleanly, and proven** — every function must be byte-identical against the original
-binary's executed behaviour on real x86 and AArch64 before it counts.
+A **from-the-executable-up clean-room reimplementation of the original PC
+The Sims 2 engine** (target: Steam Legacy Collection `1.18.0.187`) in modern
+C++. No emulation, no Wine/Box86, no Winlator: original x86 behaviour is being
+**reverse-engineered by semantics, re-implemented cleanly, and proven** —
+every function must be byte-identical against the original binary's executed
+x86 behaviour before it counts.
 
-It is **not yet a bootable or playable game.** The Android app in this repo is a diagnostic
-shell. Progress is measured in verified functions, not vibes — see `docs/VERIFIED_LEDGER.md`
-for what is actually proven and at what confidence tier.
+> **Scope (2026-11-04):** platform ports (Android ARM64 first) are deferred
+> to a separate follow-on project that inherits this codebase and its
+> evidence. That split is deliberate: pinning down *what the original x86 exe
+> does* — undefined behaviour and all — is a different job from deciding what
+> a port should do about it, and doing both at once makes port bugs
+> indistinguishable from original quirks. Nothing here requires a phone,
+> tablet, or any ARM64 hardware.
+
+It is **not yet a bootable or playable game.** The Android app in this repo is
+a frozen diagnostic shell. Progress is measured in verified functions, not
+vibes — see `docs/VERIFIED_LEDGER.md` for what is actually proven and at what
+confidence tier.
 
 ## Before you write any code
 
@@ -24,8 +34,9 @@ Read, in order:
    your function touches an area already probed; not a setup doc).
 
 Core documents to respect but not necessarily re-read per change:
-`docs/LOCAL_VALIDATION.md`, `docs/OBJECT_QUERY_CALLER.md`,
-`docs/RESOURCE_PRECEDENCE.md`, `docs/GHIDRA_WORKFLOW.md`.
+`docs/TOOLCHAIN.md` (pinned tools/versions), `docs/LOCAL_VALIDATION.md`,
+`docs/OBJECT_QUERY_CALLER.md`, `docs/RESOURCE_PRECEDENCE.md`,
+`docs/GHIDRA_WORKFLOW.md`.
 
 ## Source readability is a feature (read this twice)
 
@@ -46,8 +57,11 @@ code is a first-class engine codebase, not a scratchpad:
 |---|---|
 | Any x86 PC (CPU only) | Differential harness runs, host validation (`scripts/test-host.sh`), harness/test authoring, Ghidra static analysis, docs |
 | 8–12 GB VRAM (e.g. RTX 3070) | All of the above, plus a *helper* LLM (≈14B Q4 class) for drafting — helper output is never accepted as proof; a human reviews before committing |
-| ARM64 device + ADB | AArch64 execution arms of the differential rig — genuinely scarce and very welcome |
 | Big GPU / API tokens | Long-running analysis agents. Useful, but never bypass the verification rules below |
+
+No ARM64 device or emulator is needed for anything in the current
+verification flow. If you happen to have spare ARM64 hardware, note it in
+Discord — it becomes relevant again when the port project spins up.
 
 You do **not** need a GPU or the game's private binaries to start: harness work, tests,
 docs and static analysis all run from a plain clone.
@@ -64,8 +78,8 @@ Work units are individual original functions, addressed by RVA (e.g. `0x1AB665`)
    issue when your function merges or you abandon it.
 3. **Work** on a branch named `recomp/<rva>-<short-name>` (e.g. `recomp/0x10A0-field-reader`).
    One function per branch; stay inside your work's blast radius.
-4. **Prove** it: your PR contains the executed evidence — x86 reference run, host run, and
-   (for full-tier) AArch64 run — with receipts under the paths described in
+4. **Prove** it: your PR contains the executed evidence — x86 reference run
+   and host run — with receipts under the paths described in
    `docs/VERIFICATION.md`. A PR that renames a function is documentation; a PR that
    *claims verification* without receipts will be closed with extreme prejudice.
 5. **Merge**: a maintainer reviews, re-runs your receipts, then merges your ledger row
@@ -106,21 +120,20 @@ device identifiers. Ask the owner for a `worker_key`.
 scripts/test-host.sh
 ```
 
-With JDK 17+ and the pinned Android SDK/NDK:
-
-```bash
-scripts/build-android.sh --no-daemon
-```
+That's the whole gate. (The Android build still works but is frozen; see the
+scope note above.)
 
 ## Working rules (maintainers and autonomous campaign agents)
 
 Human contributors: skim this too — it explains why reviews ask what they ask.
 
 - **Preserve the existing implementation.** Prefer bounded static recompilation plus portable guest/runtime services; investigate a major architectural switch before making one. No Wine/Winlator/Box86 or runtime x86 emulation in the shipped game.
-- Existing code/test results validate diagnostic Android execution, selected reconstructed functions, and resource decoding. They do **not** validate the original game's startup, real menu, renderer or simulation.
-- Set up and reuse **Ghidra headless** as the persistent, targeted reverse-engineering index for the authorized private Legacy analysis image; see `docs/GHIDRA_WORKFLOW.md`. Never infer correct executable behavior from decompiler pseudocode alone; retain pinned pcrecomp and independent x86/ARM64 comparisons.
+- Existing code/test results validate selected reconstructed functions and
+  resource decoding. They do **not** validate the original game's startup,
+  real menu, renderer or simulation.
+- Set up and reuse **Ghidra headless** as the persistent, targeted reverse-engineering index for the authorized private Legacy analysis image; see `docs/GHIDRA_WORKFLOW.md`. Never infer correct executable behavior from decompiler pseudocode alone; retain pinned pcrecomp and independent x86 reference comparisons.
 - Use small changes with explicit hypotheses and independent comparison against trusted x86 reference behavior where available.
-- Phase 1 is an Android **gameplay** smoke test on a compatible emulator or physical device; no device must remain connected for routine work. The current Gradle app packages ARM64 only. Controller-only gameplay is a **later phase**.
+- Platform-port phases (Android gameplay smoke test, controller support, and the like) are **deferred** with the port project and are not acceptance gates here. Routine work requires no device of any kind.
 - Work on a dedicated branch/worktree. Commit reviewable tested changes; do not automatically push/force-push, publish proprietary artifacts or mutate unrelated host services.
 - Maintain concise durable progress and known failures. If blocked, specify what failed, exact evidence, and the next plausible experiment. Never fake progress, alter acceptance criteria, or silently remove unresolved P0/P1 questions.
 - Autonomous agents contributing to this project follow exactly these rules: the same ledger, claim, proof and readability standards as human contributors, and coordinators list their held RVAs in claim PRs. Record disagreements between older and newer findings and resolve them by evidence rather than silently rewriting history.

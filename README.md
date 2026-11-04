@@ -1,18 +1,24 @@
-# The Sims 2 — Native Android Recompilation
+# The Sims 2 — Clean-Room Engine Recompilation
 
 **New code, old behaviour, proof by execution.**
 
 A clean-room, from-the-executable-up reimplementation of the original PC
-The Sims 2 engine in modern C++, built to run **natively on ARM64 Android**.
-No emulation, no runtime x86 translation (Box86/Wine-class approaches are
-explicitly out of scope), no original machine code in the result.
+The Sims 2 engine in modern C++. The goal right now is one thing: **behaviour
+identical to the original binary**, proven by execution. No emulation, no
+runtime x86 translation (Box86/Wine-class approaches are explicitly out of
+scope), no original machine code in the result.
+
+> 📦 **Scope note (2026-11-04):** platform ports — Android ARM64 first among
+> them — are **deferred to a separate follow-on project** that will inherit
+> this codebase and its evidence. Verification here runs against the original
+> x86 behaviour only; no physical device is needed or required for any tier.
+> The Android app in this repo is a frozen diagnostic artifact.
 
 > ⚠️ **Honest status:** this is a long-horizon engineering project, not a
 > playable game yet. 46 functions have survived full verification out of
 > ~43,700 in the target binary. What exists today is the *machinery* — build
 > system, differential-verification harness, and the process that makes every
-> verified function provably correct — plus a diagnostic Android app that
-> exercises parts of it on real devices.
+> verified function provably correct.
 
 ## How it works
 
@@ -23,12 +29,13 @@ original source code (it's gone). For each function:
    decompiler pseudocode is treated strictly as hypothesis).
 2. **Re-implement** — write fresh, readable, idiomatic C++ expressing the
    observed *behaviour*.
-3. **Prove** — execute the original function and the new implementation on
-   real hardware (x86 reference vs ARM64 build) across many inputs. Outputs
+3. **Prove** — execute the original function and the new implementation
+   against the recorded x86 reference behaviour across many inputs. Outputs
    must match byte-for-byte. Only functions with receipts count.
 
 Verification tiers (see [`docs/VERIFICATION.md`](docs/VERIFICATION.md)):
-**T1** = full dual-ISA differential proof · **T3** = path-bounded/partial.
+**T1** = full differential proof vs the x86 reference · **T3** =
+path-bounded/partial.
 Everything ever proven lives in [`docs/VERIFIED_LEDGER.md`](docs/VERIFIED_LEDGER.md).
 
 Correct-but-illegible is a failure state: the code aims to stay *readable*
@@ -46,9 +53,8 @@ Give a capable coding agent this repository URL and the following prompt:
 > and `AGENTS.md` completely first. Then: run `scripts/doctor.sh` and report
 > what's missing; install the missing prerequisites (see README "Prerequisites"
 > and "Pinned components"); create a Python venv and install
-> `tools/requirements.txt`; run `scripts/test-host.sh` until it passes;
-> optionally run `scripts/build-android.sh --no-daemon` if an Android SDK is
-> configured. Commit nothing. Do **not** attempt to obtain, download,
+> `tools/requirements.txt`; run `scripts/test-host.sh` until it passes.
+> Commit nothing. Do **not** attempt to obtain, download,
 > reconstruct, or "recover" the original game binaries or content — supplying
 > those is the project owner's private step and is not needed for setup or for
 > the vast majority of contributions.
@@ -61,15 +67,14 @@ Everything the agent needs is in this README and `AGENTS.md`. If
 Any Linux/macOS box (Windows via WSL2); a plain x86_64 machine is enough to
 start — contributions need **no GPU, no device, and no game files**.
 
+Every pinned tool and version in one table: [docs/TOOLCHAIN.md](docs/TOOLCHAIN.md).
+
 - Git, Python 3.10+, CMake 3.31+, Ninja, a C++20 compiler
 - Python deps: `python3 -m venv .venv && . .venv/bin/activate && pip install -r tools/requirements.txt`
-- For the Android app only: a full **JDK 17+** (JRE insufficient; JDK 25 is
-  unsupported by the pinned Gradle), Android SDK command-line tools,
-  **NDK 27.2.12479018**, **platforms;android-35**, **build-tools;35.0.0**,
-  SDK **cmake;3.31.6**
-- Optional extras: an ARM64 Android device/emulator for on-device validation,
-  and Zig 0.14.0 wrappers for the AArch64-under-QEMU regression lane
-  (`docs/LOCAL_VALIDATION.md`)
+
+The Android app and its toolchain (JDK, SDK, NDK) are **frozen** — deferred
+to the follow-on port project. You do not need them to contribute, and
+nothing in the verification flow requires an ARM64 device or emulator.
 
 ### First build
 
@@ -89,7 +94,13 @@ TS2_ASAN_WORKARROW= ctest --test-dir build/sanitized --output-on-failure
 
 (Where ptrace blocks LeakSanitizer: `ASAN_OPTIONS=detect_leaks=0 ctest ...`.)
 
-### Android app
+### Android app (frozen — see scope note)
+
+The Gradle diagnostic app still builds, but it is **not part of current
+verification and not accepting app-level changes**; it moves to the follow-on
+port project. For reference, the pinned stack was: JDK 17+,
+**NDK 27.2.12479018**, **platforms;android-35**, **build-tools;35.0.0**, SDK
+**cmake;3.31.6**.
 
 ```sh
 sdkmanager 'platforms;android-35' 'build-tools;35.0.0' \
@@ -154,7 +165,8 @@ archives, not setup docs.
   disassembly, and differential evidence — never from leaked or otherwise
   unauthorised source code.
 - **No game content in git.** Ever, in any form.
-- **No emulation shortcuts in shipped code.** The deliverable is native ARM64.
+- **No emulation shortcuts in shipped code.** The deliverable is a native
+  clean-room engine; platform targets are decided by the port project.
 - **Receipts or it didn't happen.** Claims without differential evidence are
   filed as hypotheses, not progress.
 - **Readability is a feature.** Ship legible or don't ship.
