@@ -1,21 +1,24 @@
-# AGENTS.md — Contributing to the Sims 2 clean-room engine recompilation
+# AGENTS.md — Contributing to the Sims 2 native engine recompilation
 
 ## What this project is
 
-A **from-the-executable-up clean-room reimplementation of the original PC
+A **from-the-executable-up reimplementation of the original PC
 The Sims 2 engine** (target: Steam Legacy Collection `1.18.0.187`) in modern
-C++. No emulation, no Wine/Box86, no Winlator: original x86 behaviour is being
+C++, written directly from disassembly and executed-behaviour evidence.
+No emulation, no Wine/Box86, no Winlator: original x86 behaviour is being
 **reverse-engineered by semantics, re-implemented cleanly, and proven** —
 every function must be byte-identical against the original binary's executed
 x86 behaviour before it counts.
 
 > **Scope (2026-11-04):** platform ports (Android ARM64 first) are deferred
-> to a separate follow-on project that inherits this codebase and its
-> evidence. That split is deliberate: pinning down *what the original x86 exe
-> does* — undefined behaviour and all — is a different job from deciding what
-> a port should do about it, and doing both at once makes port bugs
-> indistinguishable from original quirks. Nothing here requires a phone,
-> tablet, or any ARM64 hardware.
+> to a separate follow-on project that will build on this codebase; that
+> project owns its own validation rules, and no tier promised here transfers
+> to a port automatically. The split is deliberate: pinning down *what the
+> original x86 exe does* — undefined behaviour and all — is a different job
+> from deciding what a port should do about it, and doing both at once makes
+> port bugs indistinguishable from original quirks. Verification compares
+> against the x86 reference on whatever machine builds the C++ — nothing here
+> requires a phone, tablet, or any ARM64 hardware.
 
 It is **not yet a bootable or playable game.** The Android app in this repo is
 a frozen diagnostic shell. Progress is measured in verified functions, not

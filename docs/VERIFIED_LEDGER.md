@@ -17,11 +17,11 @@ committed or pushed by this pass; no gate was changed.
 
 > **Policy update (2026-11-04):** ARM64/AArch64 execution is retired from the
 > tier requirements as of the port-deferral decision. Going forward **T1 =
-> whole-function differential proof against the x86 reference** (host or
-> emulated execution), and T2 collapses into it; the AArch64 clause in the
-> table above applies only to rows earned before this date. No existing row
-> is promoted or demoted by this change — the tier column records the
-> evidence as earned.
+> whole-function differential proof of the host build against the x86
+> reference**, and T2 collapses into it; the AArch64 clause in the table
+> above applies only to rows earned before this date. No existing row is
+> promoted or demoted by this change — the tier column records the evidence
+> as earned.
 
 Classification rules applied, and why some rows are lower than their commit subject sounds:
 

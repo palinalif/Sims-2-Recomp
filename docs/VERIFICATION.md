@@ -2,12 +2,13 @@
 
 > **Policy update (2026-11-04):** platform ports (Android ARM64 first) are
 > deferred to a separate follow-on project. Effective immediately, the
-> verification ladder is **x86 reference vs host differential only** — the
-> AArch64/physical-device execution arms are retired from the gates, and no
-> tier requires a device. T1 = full differential proof against the recorded
-> x86 reference behaviour (emulated execution counts). Historical receipts
-> below are kept as-recorded, including the device runs already performed;
-> nothing already earned is demoted.
+> verification ladder is **x86 reference vs host build differential only** —
+> the new C++ is checked by building it for the host machine (any optimisation
+> level, sanitizers included) and comparing against the original x86
+> reference. The AArch64 execution arm and physical-device steps are retired
+> from the gates; no tier requires a device or a cross-target build.
+> Historical receipts below are kept as-recorded, including the device runs
+> already performed; nothing already earned is demoted.
 
 Repository: `/workspace/sims2-native`, branch `work/native-foundation`.
 Initial foundation checks ran before game files arrived; later sections record

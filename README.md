@@ -1,17 +1,21 @@
-# The Sims 2 — Clean-Room Engine Recompilation
+# The Sims 2 — Native Engine Recompilation
 
 **New code, old behaviour, proof by execution.**
 
-A clean-room, from-the-executable-up reimplementation of the original PC
-The Sims 2 engine in modern C++. The goal right now is one thing: **behaviour
+A from-the-executable-up reimplementation of the original PC
+The Sims 2 engine in modern C++, written directly from disassembly and
+executed-behaviour evidence. The goal right now is one thing: **behaviour
 identical to the original binary**, proven by execution. No emulation, no
 runtime x86 translation (Box86/Wine-class approaches are explicitly out of
-scope), no original machine code in the result.
+scope), and **no original machine code or game assets in the output**.
 
 > 📦 **Scope note (2026-11-04):** platform ports — Android ARM64 first among
-> them — are **deferred to a separate follow-on project** that will inherit
-> this codebase and its evidence. Verification here runs against the original
-> x86 behaviour only; no physical device is needed or required for any tier.
+> them — are **deferred to a separate follow-on project** that will build on
+> this codebase. That project defines its own validation; nothing in this
+> repo promises that a verification tier here transfers to a port build.
+> Verification here compares behaviour against the original x86 reference on
+> the host machine that builds the C++ (any optimisation level, sanitizers
+> included); no physical device and no cross-target build is required.
 > The Android app in this repo is a frozen diagnostic artifact.
 
 > ⚠️ **Honest status:** this is a long-horizon engineering project, not a
@@ -22,7 +26,7 @@ scope), no original machine code in the result.
 
 ## How it works
 
-We do **not** translate x86 machine code to ARM64, and we do not recover the
+We do **not** translate x86 machine code to other ISAs, and we do not recover the
 original source code (it's gone). For each function:
 
 1. **Hypothesise** — study the x86 binary (Ghidra as a discovery index;
@@ -34,7 +38,7 @@ original source code (it's gone). For each function:
    must match byte-for-byte. Only functions with receipts count.
 
 Verification tiers (see [`docs/VERIFICATION.md`](docs/VERIFICATION.md)):
-**T1** = full differential proof vs the x86 reference · **T3** =
+**T1** = whole-function differential proof vs the x86 reference · **T3** =
 path-bounded/partial.
 Everything ever proven lives in [`docs/VERIFIED_LEDGER.md`](docs/VERIFIED_LEDGER.md).
 
@@ -161,12 +165,13 @@ archives, not setup docs.
 
 ## Ground rules
 
-- **Clean room.** Behaviour is derived from executed observable inputs,
-  disassembly, and differential evidence — never from leaked or otherwise
-  unauthorised source code.
+- **New code only.** Behaviour is derived from executed observable inputs,
+  disassembly, and differential evidence — the output contains no original
+  machine code or assets, and never from leaked or otherwise unauthorised
+  source code.
 - **No game content in git.** Ever, in any form.
 - **No emulation shortcuts in shipped code.** The deliverable is a native
-  clean-room engine; platform targets are decided by the port project.
+  clean engine codebase; platform targets are decided by the port project.
 - **Receipts or it didn't happen.** Claims without differential evidence are
   filed as hypotheses, not progress.
 - **Readability is a feature.** Ship legible or don't ship.
